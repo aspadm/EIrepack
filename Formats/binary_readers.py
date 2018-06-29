@@ -122,19 +122,19 @@ def read_double(file, count=1):
     return array if count > 1 else array[0]
 
 # Non-terminated char array
-def read_str(file, length, code="utf-8"):
+def read_str(file, length, code="cp1251"):
     buf = ""
     for i in range(length):
-        b = unpack('c', file.read(1))[0]
+        b = struct.unpack('c', file.read(1))[0]
         
         buf += b.decode(code)
     return buf
 
 # Zero-terminated char array (C-style string)
-def read_cstr(file, code="utf-8"):
+def read_cstr(file, code="cp1251"):
     buf = ""
     while True:
-        b = unpack('c', file.read(1))[0]
+        b = struct.unpack('c', file.read(1))[0]
         
         if b is None or ord(b) == 0:
             return buf
