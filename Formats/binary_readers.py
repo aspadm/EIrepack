@@ -48,9 +48,21 @@ def read_uint(file, count=1):
         
     return array if count > 1 else array[0]
 
-#def read_int64(file, count=1):
+# Signed 4b integer
+def read_int64(file, count=1):
+    array = [] 
+    for i in range(count): 
+        array.append(struct.unpack('q', file.read(8))[0])
+        
+    return array if count > 1 else array[0]
 
-#def read_uin64(file, count=1):
+# Unsigned 8b integer
+def read_uin64(file, count=1):
+    array = [] 
+    for i in range(count): 
+        array.append(struct.unpack('Q', file.read(8))[0])
+        
+    return array if count > 1 else array[0]
 
 # Conversion between 2b half to 4b float
 def half_to_float(h):
@@ -81,7 +93,7 @@ def half_to_float(h):
 # Hard-float 2b real
 def read_half(file, count=1):
     array = [] 
-    for id in range(n):
+    for i in range(count):
         nz = file.read(2)
         
         v = struct.unpack('H', nz)
