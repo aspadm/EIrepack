@@ -1,20 +1,26 @@
 import sys
 from binary_readers import *
 
-def build_ini(tree):
+ENCODE = "cp866"
+
+def build_yaml(tree):
     buf = ""
     for section in tree:
-        buf += "[{}]\n".format(section[0])
+        buf += "{}:\n".format(section[0])
         for key in section[1]:
-            buf += "{}=".format(key[0])
+            buf += "  {}:".format(key[0])
             if type(key[1]) != type([]):
-                buf += "{}\n".format(key[1])
+                if type(key[1]) == str:
+                    buf += " \"{}\"\n".format(key[1])
+                else:
+                    buf += " {}\n".format(key[1])
             else:
-                for i in range(len(key[1])):
-                    if i > 0:
-                        buf += ", "
-                    buf += "{}".format(key[1][i])
                 buf += "\n"
+                for item in key[1]:
+                    if type(item) == str:
+                        buf += "    - \"{}\"\n".format(item)
+                    else:
+                        buf += "    - {}\n".format(item)
     return buf[:-1]
                 
 
@@ -38,7 +44,7 @@ def read_key(file, key_type):
             buf.append(read_float(file))
         else:
             length = read_ushort(file)
-            buf.append(read_str(file, length))
+            buf.append(read_str(file, length, ENCODE))
     
     return buf[0] if count == 1 else buf
 
@@ -66,7 +72,7 @@ def read_tree(f_name):
                 section[1].append(["", 0])
                 
             name_len = read_ushort(file)
-            section[0] = read_str(file, name_len)
+            section[0] = read_str(file, name_len, ENCODE)
 
             for key in section[1]:
                 read_short(file)
@@ -76,19 +82,21 @@ def read_tree(f_name):
                 file.seek(section[2] + key[1])
                 key_type = read_byte(file)
                 name_len = read_ushort(file)
-                key[0] = read_str(file, name_len)
+                key[0] = read_str(file, name_len, ENCODE)
                 key[1] = read_key(file, key_type)
         
         return tree
 
 if __name__ == '__main__':
+    #print_tree(read_tree("ai.reg"))
+    #exit()
     if 2 <= len(sys.argv) <= 3:
         tree = read_tree(sys.argv[1])
-        #print_tree(tree)
+        
         if len(sys.argv) == 2:
-            print(build_ini(tree))
+            print(build_yaml(tree))
         else:
             with open(sys.argv[2], "w") as file:
-                file.write(build_ini(tree))
+                file.write(build_yaml(tree))
     else:
-        print("Usage: reg.py input.reg [output.ini]")
+        print("Usage: reg.py input.reg [output.yaml]")
