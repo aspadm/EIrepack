@@ -1,20 +1,3 @@
-# DD 00 00
-# DXT1
-# DXT3
-# PNT3
-# PV 00 00
-# QU 00 00
-# 88 88 00 00
-
-# 44440000 ARGB4
-# 44585431 DXT1
-# 44585433 DXT3
-# 504e5433 PNT3 - RLE encoded
-# 50560000 R5G5B5
-# 51550000 A1R5G5B5
-# 88880000 ARGB8
-
-
 import sys
 from PIL import Image
 import numpy as np
@@ -22,14 +5,13 @@ from binary_readers import *
 
 def extract_color(pixel, mask, shift, count):
     return int(0.5 + 255 * ((pixel & mask) >> shift) / (mask >> shift))
-    #return round(255 * ((pixel & mask) >> shift) / (mask >> shift))
-    #return ((pixel & mask) >> shift) << (8 - count)
 
 def get_color(pixel, a_d, r_d, g_d, b_d):
     if a_d[2] == 0:
         a = 255
     else:
         a = extract_color(pixel, a_d[0], a_d[1], a_d[2])
+        
     r = extract_color(pixel, r_d[0], r_d[1], r_d[2])
     g = extract_color(pixel, g_d[0], g_d[1], g_d[2])
     b = extract_color(pixel, b_d[0], b_d[1], b_d[2])
@@ -51,16 +33,8 @@ def convert_DXT(file, width, height, DXT3=False):
                         
             gen_c1 = read_ushort(file)
             gen_c2 = read_ushort(file)
-            color[0] = get_color(gen_c1,
-                                 [0, 0, 0],
-                                 [63488, 11, 5],
-                                 [2016, 5, 6],
-                                 [31, 0, 5])
-            color[1] = get_color(gen_c2,
-                                 [0, 0, 0],
-                                 [63488, 11, 5],
-                                 [2016, 5, 6],
-                                 [31, 0, 5])
+            color[0] = get_color(gen_c1, [0, 0, 0], [63488, 11, 5], [2016, 5, 6], [31, 0, 5])
+            color[1] = get_color(gen_c2, [0, 0, 0], [63488, 11, 5], [2016, 5, 6], [31, 0, 5])
             
             if gen_c1 > gen_c2 or DXT3:
                 color[2] = [(2 * color[0][i] + color[1][i]) // 3 for i in range(4)]
@@ -86,6 +60,7 @@ def read_image(f_name):
         if file.read(4) != b"\x4D\x4D\x50\x00":
             print("Incorrect magic!")
             return
+        
         width = read_uint(file)
         height = read_uint(file)
         mip_count = read_uint(file)
@@ -127,8 +102,6 @@ def decompress_PNT3(file, size, width, height):
     
     n = 0
     destination = b""
-    dst = 0
-    
     
     while src < size:
         v = int.from_bytes(source[src:src + 4], byteorder='little')
@@ -138,9 +111,7 @@ def decompress_PNT3(file, size, width, height):
             n += 1
         else:
             destination += source[src - (1 + n) * 4:src - 4]
-            dst += n * 4
             destination += b"\x00" * v
-            dst += v
             n = 0
 
     destination += source[src - n * 4:src]
@@ -154,8 +125,8 @@ def decompress_PNT3(file, size, width, height):
                           int.from_bytes(destination[n + 0:n + 1], byteorder='little'),
                           int.from_bytes(destination[n + 3:n + 4], byteorder='little')]
             n += 4
+            
     return data
-    
 
 if __name__ == '__main__':
     if 2 <= len(sys.argv) <= 3:
