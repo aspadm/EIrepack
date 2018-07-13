@@ -126,8 +126,8 @@ def read_str(file, length, code="cp1251"):
     buf = ""
     for i in range(length):
         b = struct.unpack('c', file.read(1))[0]
-        
-        buf += b.decode(code)
+        if ord(b) != 0:
+            buf += b.decode(code)
     return buf
 
 # Zero-terminated char array (C-style string)
