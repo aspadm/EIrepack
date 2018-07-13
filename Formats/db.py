@@ -24,6 +24,11 @@ types = [".idb", # items
 # b - byte array
 # H - unknown hex
 # T - time
+# 1 - " FII"
+# 2 - "SUFF"
+# 3 - "FFFF"
+# 4 - " SISS"
+# 5 - " SISS     U"
 
 types_struct = [
     # items
@@ -38,9 +43,29 @@ types_struct = [
     # perks
     ["SSI       s", # skills
      "SSI       SSIIIFFFIIIIBI"], # perks
+    # prints
+    [" S11", # blood prints
+     " S11      1", # fire prints
+     " S11"], # footprints
     # spells
-    ### TODO
-                ]
+    ["SSSFIFIFFFFIIIIUSSIIbIXFFFFF", # spell prototypes
+     "SSFIFFISX", # spell modifiers
+     " SssSX", # spell templates
+     " SssSX", # armor spell templates
+     " SssSX"], # weapon spell templates
+    # units
+    ["SffUU", # hit locations
+     "SUFFUUFfFUUf222222            SssFSsfUUfUUIUSBFUUUU", # race models
+     "SSIUIFFFSFFFFFFFFFUFFFFFFff33sfssSFFFFFUFUSF", # monster prototypes
+     "SUFFFFbbssssFUB"], # NPCs
+    # acks
+    [" S        44444444444444444444445444444444444", # answers
+     " S        44444", # cryes
+     " S        44"], # others
+    # quests
+    ["SFIISIIs", # quests
+     "SFFsSsssssI"] # briefings
+    ]
 
 titles = [
     ["materials\nname,type,code,ID,price,weight,mana,slots,durability,skill,\
@@ -69,7 +94,25 @@ texture type 2,price,weight,size,mana,slots,durability,components,\
 shop1,shop2,shop3,shop4,shop5,deconstructable,typeID,unknown,unknown"],
     ["levers\nname,place1-1,place1-2,place2-1,place2-2,unknown,scale,\
 switch time,material,switch sound,lever text"],
-    []
+    ["skills\nname,code,texture type,base attributes",
+     "\nperks\nname,code,texture type,required perk,skill type,skill type ID,\
+unknown,SL,str,dex,int,cost,modifier,multiplier,add,active,exclusive"],
+    ["blood prints\nterrain type,clear weather opacity,clear weather lifetime,\
+clear weather fadeout,weather precipitation opacity,weather precipitation \
+lifetime,weather precipitation fadeout",
+     "\nfoot prints\nterrain type,clear weather opacity,clear weather lifetime,\
+clear weather fadeout,weather precipitation opacity,weather precipitation \
+lifetime,weather precipitation fadeout,opacity,lifetime,fadeout",
+     "\nblood prints\nterrain type,clear weather opacity,clear weather lifetime,\
+clear weather fadeout,weather precipitation opacity,weather precipitation \
+lifetime,weather precipitation fadeout"],
+    [""], # spell
+    [""], # units
+    [""], # acks
+    ["quests\nname,experience,unknown,zone number,comment,money,record number,\
+unknown",
+     "\nbriefings\nname,unknown,money,give items,comment,take items,\
+give quests 1,give quests 2,open zones,unknown,bonus number"]
     ]
      
 
@@ -173,7 +216,13 @@ def read_record(file, record):
             while file.tell() < border:
                 s_id, s_len = read_id_n(file)
                 buf[-1].append(read_str(file, s_len))
-
+        elif spec == "1":
+            read_id_n(file)
+            buf.append(read_float(file))
+            read_id_n(file)
+            buf.append(read_int(file))
+            read_id_n(file)
+            buf.append(read_int(file))
         else:
             print("Skip unknown specificator:", spec, "at", file.tell(), l_id, l_len)
             file.read(l_len)
