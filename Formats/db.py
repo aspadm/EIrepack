@@ -20,9 +20,9 @@ types = [".idb", # items
 # X - bits byte
 # f - float array
 # i - int array
-# B - byte
-# b - byte array
-# H - unknown hex
+# B - bool
+# b - bool array
+# H - unknown hex bytes
 # T - time
 # 1 - " FII"
 # 2 - "SUFF"
@@ -35,7 +35,7 @@ types_struct = [
     ["SSSIFFFIFIFfIX", # materials
      "SSISIIIFFFFIFIXB     IHFFFfHHFF", # weapons
      "SSISIIIFFFFIFIXB     ffBiHH", # armors
-     "SSISIIIFFFFIFIbB     IIFFSbH", # quick items
+     "SSISIIIFFFFIFIXB     IIFFSbH", # quick items
      "SSISIIIFFFFIFIXB     Is", # quest items
      "SSISIIIFFFFIFIXB     IHI"], # loot items
     # levers
@@ -106,9 +106,27 @@ lifetime,weather precipitation fadeout,opacity,lifetime,fadeout",
      "\nblood prints\nterrain type,clear weather opacity,clear weather lifetime,\
 clear weather fadeout,weather precipitation opacity,weather precipitation \
 lifetime,weather precipitation fadeout"],
-    [""], # spell
+    ["spell prototypes\nname,code,subtype,price,typeID,mana,\
+slots,speed,range,area,effect,target,targets,duration,actions,require trace,\
+buildin mods,special mods,texture type,subtypeID,range mod,targets mod,area mod,\
+effects mod,duration mod,complex,shop1,shop2,shop3,shop4,shop5,reg,green,blue,\
+light radius,fadeout time",
+     "\nspell modifiers\nname,code,price,type,mana,value,complex,allod,shop1,\
+shop2,shop3,shop4,shop5",
+     "\nspell templates\nprototype,required,optional,power,shop1,shop2,shop3,\
+shop4,shop5",
+     "\narmor spell templates\nprototype,required,optional,power,shop1,shop2,\
+shop3,shop4,shop5",
+     "\nweapon spell templates\nprototype,required,optional,power,shop1,shop2,\
+shop3,shop4,shop5"],
     [""], # units
-    [""], # acks
+    ["answers\nname,select,move,attack,cast,loot,use object,steal,follow,use \
+pot,change position,no path,cant cast,cant teleport,ski fail,no target,\
+complete sp,dec to att,stamina out,arm crip,leg crip,bored,unknown,overloaded,\
+injured,big att,armor crip,wear crip,att in def,wait foll,scenario,steal emp,\
+shop yes,shop no",
+     "\ncryes\nname,agression,suspect,kill,rest,in agression",
+     "\nothers\nname,talk,rest"],
     ["quests\nname,experience,unknown,zone number,comment,money,record number,\
 unknown",
      "\nbriefings\nname,unknown,money,give items,comment,take items,\
@@ -191,16 +209,16 @@ def read_record(file, record):
         elif spec == "F":
             buf.append(read_float(file))
         elif spec == "B":
-            buf.append(read_byte(file))
+            buf.append(bool(read_byte(file)))
         elif spec == "T":
             buf.append(read_uint(file) - 1 / 15 + 0.1)
         elif spec == "f":
-            print(l_len)
+            #print(l_len)
             buf.append(read_float(file, l_len // 4))
         elif spec == "i":
             buf.append(read_int(file, l_len // 4))
         elif spec == "b":
-            buf.append(read_byte(file, l_len))
+            buf.append(list(map(bool, read_byte(file, l_len))))
         elif spec == "X":
             buf.append([])
             if l_len != 4:
@@ -211,11 +229,14 @@ def read_record(file, record):
                 value >>= 2
             #print(buf[-1])
         elif spec == "s":
-            buf.append([])
+            buf.append([""])
             border = file.tell() + l_len
             while file.tell() < border:
                 s_id, s_len = read_id_n(file)
-                buf[-1].append(read_str(file, s_len))
+                if len(buf[-1][-1]) > 0:
+                    buf[-1][-1] += "; "
+                buf[-1][-1] += read_str(file, s_len)
+                
         elif spec == "1":
             read_id_n(file)
             buf.append(read_float(file))
@@ -223,6 +244,38 @@ def read_record(file, record):
             buf.append(read_int(file))
             read_id_n(file)
             buf.append(read_int(file))
+        elif spec == "4":
+            buf.append([""])
+            border = file.tell() + l_len
+            while file.tell() < border:
+                r_id, r_len = read_id_n(file)
+                r_b = file.tell() + r_len
+                while file.tell() < r_b:
+                    s_id, s_len = read_id_n(file)
+                    if s_id in [1,3,4]:
+                        buf[-1][-1] += read_str(file, s_len)
+                    else:
+                        buf[-1][-1] += "; " + str(read_int(file))
+                    if file.tell() < r_b:
+                        buf[-1][-1] += "; "
+                if file.tell() < border:
+                    buf[-1][-1] += " | "
+        elif spec == "5":
+            buf.append([""])
+            border = file.tell() + l_len
+            while file.tell() < border:
+                r_id, r_len = read_id_n(file)
+                r_b = file.tell() + r_len
+                while file.tell() < r_b:
+                    s_id, s_len = read_id_n(file)
+                    if s_id in [1,3,4]:
+                        buf[-1][-1] += read_str(file, s_len)
+                    else:
+                        buf[-1][-1] += "; " + str(read_int(file))
+                    if file.tell() < r_b:
+                        buf[-1][-1] += "; "
+                if file.tell() < border:
+                    buf[-1][-1] += " | "
         else:
             print("Skip unknown specificator:", spec, "at", file.tell(), l_id, l_len)
             file.read(l_len)
@@ -243,6 +296,9 @@ def read_data(f_name):
             
             while file.tell() < reg_len:
                 data[-1].append(read_record(file, types_struct[base_type][i]))
+        is_end = file.read(10)
+        if is_end != END:
+            print("Some data after table!")
     return data
 
 if __name__ == '__main__':
