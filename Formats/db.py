@@ -119,7 +119,36 @@ shop4,shop5",
 shop3,shop4,shop5",
      "\nweapon spell templates\nprototype,required,optional,power,shop1,shop2,\
 shop3,shop4,shop5"],
-    [""], # units
+    ["hit locations\nname,piercing,slashing,bludgeoning,thermal,chemical,\
+electrical,general,piercing2,slashing2,bludgeoning2,thermal2,chemical2,\
+electrical2,general2,unknown,unknown",
+     "\nrace models\nname,typeID,health regen,mana regen,language,locomotion,\
+vision arc,run speed,walk speed,sneak speed,crawl speed,attack distance,\
+AI stay,AI lie,atk piercing,atk slashing,atk bludgeoning,atk thermal,atk \
+chemical,atk electrical,atk general,head type,unknown,head weight,head HP,\
+torso type,unknown,torso weight,torso HP,right arm type,unknown,right arm weight,\
+right arm HP,left arm type,unknown,left arm weight,left arm HP,right leg type,\
+unknown,right leg weight,right leg HP,left leg type,unknown,left leg weight,\
+left leg HP,mask name,textures,textures2,model shift,SFX path,steps path,\
+anm attack speed,anm cast speed,anm hit speed,anm death speed,anm cross speed,\
+anm special speed,idle sound probability,attack sound probability,def piercing,\
+def slashing,def bludgeoning,def thermal,def chemical,def electrical,def \
+general,blood type,cast type,footprint type,leg segment,skin type,first step \
+right,head height,unknown,unknown,unknown,unknown",
+     "\nmonster prototypes\nname,base race,unknown,skin index,hair,complection X,\
+complection Y,complection Z,unknown,HP,mana,absorbtion,tuning actions,\
+tuning move,attack range,stats to hit,stats parry,tuning weapon weight,\
+tuning weapon typeID,damage min,damage max,general skills,steal skills,\
+tame skills,peripheral skills,sight sense,infra sense,lifesense,hearing,smell,\
+tracking,detect sight,detect infra,detect life,detect hearing,detect smell,\
+detect tracking,loot chance,loot mask,loot min,loot max,rare loot chance,\
+rare loot mask,rare loot min,rare loot max,items,elemental,senses,astral,\
+spells,wears,weapon,info scale,altitude,random hit,dialog cam distance,\
+dialog cam height,real wepon typeID,detonation,base level,second weapon,\
+expirience",
+     "\nNPCs\nname,unknown,expirience,strength,dexterity,intelligence,\
+science,stealing,tame,melee,archery,backstab,elemental,senses,astral,stealth,\
+awareness,perks,weapons,quest items,spells,exp to distribute,money,voice"],
     ["answers\nname,select,move,attack,cast,loot,use object,steal,follow,use \
 pot,change position,no path,cant cast,cant teleport,ski fail,no target,\
 complete sp,dec to att,stamina out,arm crip,leg crip,bored,unknown,overloaded,\
@@ -137,7 +166,7 @@ give quests 1,give quests 2,open zones,unknown,bonus number"]
 def find_db_struct(f_name):
     for i in range(len(types)):
         if f_name[- len(types[i]):] == types[i]:
-            print("type is", i)
+            #print("Base type is", i)
             return i
     raise ValueError
 
@@ -185,18 +214,16 @@ def build_data(data):
         else:
             buf += str(line)
         buf += "\n"
-    #return str(data)
+        
     return buf
 
 def read_record(file, record):
     buf = []
     section, length = read_id_n(file)
-    #print(file.tell(), ":", section, length)
     length += file.tell()
     
     while file.tell() < length:
         l_id, l_len = read_id_n(file)
-        #print(l_id, l_len)
         spec = record[l_id]
         if spec == "H":
             buf.append(file.read(l_len))
@@ -213,7 +240,6 @@ def read_record(file, record):
         elif spec == "T":
             buf.append(read_uint(file) - 1 / 15 + 0.1)
         elif spec == "f":
-            #print(l_len)
             buf.append(read_float(file, l_len // 4))
         elif spec == "i":
             buf.append(read_int(file, l_len // 4))
@@ -227,7 +253,6 @@ def read_record(file, record):
             for bit in range(5):
                 buf[-1].append(bool(value & 1))
                 value >>= 2
-            #print(buf[-1])
         elif spec == "s":
             buf.append([""])
             border = file.tell() + l_len
@@ -236,7 +261,6 @@ def read_record(file, record):
                 if len(buf[-1][-1]) > 0:
                     buf[-1][-1] += "; "
                 buf[-1][-1] += read_str(file, s_len)
-                
         elif spec == "1":
             read_id_n(file)
             buf.append(read_float(file))
@@ -244,6 +268,24 @@ def read_record(file, record):
             buf.append(read_int(file))
             read_id_n(file)
             buf.append(read_int(file))
+        elif spec == "2":
+            s_id, s_len = read_id_n(file)
+            buf.append(read_str(file, s_len))
+            read_id_n(file)
+            buf.append(read_uint(file))
+            read_id_n(file)
+            buf.append(read_float(file))
+            read_id_n(file)
+            buf.append(read_float(file))
+        elif spec == "3":
+            read_id_n(file)
+            buf.append(read_float(file))
+            read_id_n(file)
+            buf.append(read_float(file))
+            read_id_n(file)
+            buf.append(read_float(file))
+            read_id_n(file)
+            buf.append(read_float(file))
         elif spec == "4":
             buf.append([""])
             border = file.tell() + l_len
@@ -277,7 +319,7 @@ def read_record(file, record):
                 if file.tell() < border:
                     buf[-1][-1] += " | "
         else:
-            print("Skip unknown specificator:", spec, "at", file.tell(), l_id, l_len)
+            print("Skip unknown specificator:", spec, "at", file.tell())
             file.read(l_len)
     
     return buf
@@ -307,7 +349,6 @@ if __name__ == '__main__':
 
         if len(sys.argv) == 2:
             print(build_data(data))
-            #print(build_data([1, [2, 3, 'lol']]))
         else:
             with open(sys.argv[2], "w") as file:
                 file.write(build_data(data))
