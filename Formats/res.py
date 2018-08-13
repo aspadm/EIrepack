@@ -70,12 +70,13 @@ def read_filetree(file):
 
     return filetree
 
-def unpack_res(file, filetree, f_name):
+def unpack_res(file, filetree, file_name):
+    f_name = file_name[:file_name.rfind(".")]
     for element in filetree:
         name = os.path.dirname(element[0])
-        if not os.path.exists(f_name[:-4] + "\\" + name):
-            os.makedirs(f_name[:-4] + "\\" + name)
-        with open(f_name[:-4] + "\\" + element[0], "wb") as new_file:
+        if not os.path.exists(f_name + "\\" + name):
+            os.makedirs(f_name + "\\" + name)
+        with open(f_name + "\\" + element[0], "wb") as new_file:
             file.seek(element[1])
             buf = file.read(element[2])
             new_file.write(buf)
