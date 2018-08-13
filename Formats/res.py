@@ -71,7 +71,7 @@ def read_filetree(file):
     return filetree
 
 def unpack_res(file, filetree, file_name):
-    f_name = file_name[:file_name.rfind(".")]
+    f_name = os.path.splitext(file_name)[0]
     for element in filetree:
         name = os.path.dirname(element[0])
         if not os.path.exists(f_name + "\\" + name):
