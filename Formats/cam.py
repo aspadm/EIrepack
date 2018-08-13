@@ -4,12 +4,8 @@ from binary_readers import *
 
 def build_cams(cams):
     buf = ""
-    i = 0
     for cam in cams:
-        if i != 0:
-            buf += "\n"
-        buf += "camera_{}:\n".format(i)
-        buf += "  position:\n"
+        buf += "- position:\n"
         buf += "    x: {}\n    y: {}\n    z: {}\n".format(cam[0][0],
                                                           cam[0][1],
                                                           cam[0][2])
@@ -18,7 +14,6 @@ def build_cams(cams):
                                                                      cam[1][1],
                                                                      cam[1][2],
                                                                      cam[1][3])
-        i += 1
 
     return buf
 
