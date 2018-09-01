@@ -57,7 +57,7 @@ def read_int64(file, count=1):
     return array if count > 1 else array[0]
 
 # Unsigned 8b integer
-def read_uin64(file, count=1):
+def read_uint64(file, count=1):
     array = [] 
     for i in range(count): 
         array.append(struct.unpack('Q', file.read(8))[0])
