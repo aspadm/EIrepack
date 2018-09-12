@@ -1,13 +1,13 @@
 import sys
 from binary_readers import *
 
-keys = ["max_altitude", "x_sectors", "y_sectors", "textures_count",
+def build_yaml(info):
+    keys = ["max_altitude", "x_sectors", "y_sectors", "textures_count",
         "texture_size", "tiles_count", "tile_size", "objects_count",
         "animated_tiles_count"]
 
-terrain_type = ["undefined", "water_no_texture", "water", "grass"]
+    terrain_type = ["undefined", "water_no_texture", "water", "grass"]
 
-def build_yaml(info):
     buf = ""
     for i in range(len(keys)):
         buf += keys[i] + ": " + str(info[i]) + "\n"

@@ -1,8 +1,6 @@
 import sys
 from binary_readers import *
 
-keys = [""]
-
 def build_yaml(info):
     buf = ""
 
@@ -57,16 +55,15 @@ def build_yaml(info):
         buf += "    sound_id_3: " + str(element[20]) + "\n"
         buf += "    sound_id_4: " + str(element[21]) + "\n"
         
-    
     return buf
 
-weapons = ["SWORD", "AXE", "DAGGER", "SPEAR", "HAMMER", "BOW", "CROSSBOW"]
-states = ["NEUTRAL", "REST", "ATTACK", "UNK3", "WARRY", "UNK5", "LIE", "ALL"]
-forms = ["HIDES", "STEPS", "HIT", "SFXES", "LOWSHAPE", "HIGHSHAPE"]
-types = ["UNK0", "SPECIAL", "ATTACK", "CAST", "RUN", "WALK", "IDLE", "DEATH",
-         "SUFFER", "CROSS", "UNK10", "UNK11", "UNK12", "UNK13", "UNK14", "ALL"]             
-
 def read_info(file_name):
+    weapons = ["SWORD", "AXE", "DAGGER", "SPEAR", "HAMMER", "BOW", "CROSSBOW"]
+    states = ["NEUTRAL", "REST", "ATTACK", "UNK3", "WARRY", "UNK5", "LIE", "ALL"]
+    forms = ["HIDES", "STEPS", "HIT", "SFXES", "LOWSHAPE", "HIGHSHAPE"]
+    types = ["UNK0", "SPECIAL", "ATTACK", "CAST", "RUN", "WALK", "IDLE", "DEATH",
+             "SUFFER", "CROSS", "UNK10", "UNK11", "UNK12", "UNK13", "UNK14", "ALL"]             
+
     info = []
     with open(file_name, "rb") as file:
         if file.read(4) != b'\x41\x44\x42\x00':
@@ -125,7 +122,6 @@ def read_info(file_name):
             
             info[-1][i].append(read_float(file))
             info[-1][i].extend(read_uint(file, 12))
-
 
     return info
 

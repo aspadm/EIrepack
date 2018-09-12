@@ -2,7 +2,7 @@ import sys
 import os.path
 from binary_readers import *
 
-def build_cams(cams):
+def build_yaml(cams):
     buf = ""
     for cam in cams:
         buf += "- time: {}\n".format(cam[0])
@@ -18,7 +18,7 @@ def build_cams(cams):
 
     return buf
 
-def read_cams(f_name):
+def read_info(f_name):
     with open(f_name, "rb") as file:
         cams = []
         for i in range(os.path.getsize(f_name) // 36):
@@ -32,12 +32,12 @@ def read_cams(f_name):
 
 if __name__ == '__main__':
     if 2 <= len(sys.argv) <= 3:
-        cams = read_cams(sys.argv[1])
+        cams = read_info(sys.argv[1])
         #print(cams)
         if len(sys.argv) == 2:
-            print(build_cams(cams))
+            print(build_yaml(cams))
         else:
             with open(sys.argv[2], "w") as file:
-                file.write(build_cams(cams))
+                file.write(build_yaml(cams))
     else:
         print("Usage: cam.py input.cam [output.yaml]")
