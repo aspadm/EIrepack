@@ -94,7 +94,8 @@ def read_image(f_name):
                     pixel = pix_reader(file)
                     data[i, j] = get_color(pixel, a_d, r_d, g_d, b_d)
 
-        return Image.fromarray(data, 'RGBA')
+        return Image.fromarray(data, 'RGBA').transpose(Image.FLIP_TOP_BOTTOM)\
+            if form != b'\x88\x88\x00\x00' else Image.fromarray(data, 'RGBA')
 
 def decompress_PNT3(file, size, width, height):
     source = file.read(size)

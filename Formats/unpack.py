@@ -9,7 +9,7 @@ not_copy = ["asi", "dll", "exe", "sav"]
 simple_copy = ["mp3", "rtf", "dat", "grp", "bik", "ini", "txt", "wav",
                "mat", "scr"]
 archives = ["mq", "mpr", "res", "bon", "mod", "anm"]
-convert = ["cam", "mob", "reg", "adb", "bon", "anm", "bon", "db", "idb",
+convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", #"mob",
            "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb", "ldb"]
 
 
@@ -23,8 +23,10 @@ if __name__ == "__main__":
                     help="output folder")
     parser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
-    parser.add_argument("-f", "--force", action="store_true",
-                    help="force file header check")
+    parser.add_argument("-s", "--skip_extract", action="store_true",
+                    help="skip archive extraction")
+    parser.add_argument("-c", "--skip_copy", action="store_true",
+                    help="skip file copy")
 
     args = parser.parse_args()
 
@@ -34,21 +36,22 @@ if __name__ == "__main__":
         print("\nCreate working copy\n")
 
     count = 0
-    # Создание папок и копирование контента игры
-    for d, dirs, files in os.walk(args.src_dir):
-        for file in files:
-            if os.path.splitext(file)[1][1:] not in not_copy:
-                dest = os.path.join(args.dst_dir,
-                                    os.path.relpath(d, args.src_dir))
-                if not os.path.exists(dest):
-                    if args.verbose:
-                        print("Create folder \"" + dest + "\"")
-                    os.makedirs(dest)
-                shutil.copyfile(os.path.join(d, file),
-                                os.path.join(dest, file))
-                count += 1
-            elif args.verbose:
-                print("Skip \"" + file + "\"")
+    if not args.skip_copy:
+        # Создание папок и копирование контента игры
+        for d, dirs, files in os.walk(args.src_dir):
+            for file in files:
+                if os.path.splitext(file)[1][1:].lower() not in not_copy:
+                    dest = os.path.join(args.dst_dir,
+                                        os.path.relpath(d, args.src_dir))
+                    if not os.path.exists(dest):
+                        if args.verbose:
+                            print("Create folder \"" + dest + "\"")
+                        os.makedirs(dest)
+                    shutil.copyfile(os.path.join(d, file),
+                                    os.path.join(dest, file))
+                    count += 1
+                elif args.verbose:
+                    print("Skip \"" + file + "\"")
 
     # Распаковка архивов, пока есть, что распаковывать
     if args.verbose:
@@ -57,7 +60,7 @@ folder anymore".format(count))
         print("\nUnpack archives recursively")
 
     count = 0
-    flag = 1
+    flag = 0 if args.skip_extract else 1
     while flag:
         count += 1
         flag = 0
@@ -67,7 +70,7 @@ folder anymore".format(count))
         arr = []
         for d, dirs, files in os.walk(args.dst_dir):
             for file in files:
-                if os.path.splitext(file)[1][1:] in archives:
+                if os.path.splitext(file)[1][1:].lower() in archives:
                     with open(os.path.join(d, file), "rb") as f_tst:
                         magic = f_tst.read(4)
                     if magic == b'\x3C\xE2\x9C\x01':
@@ -75,13 +78,13 @@ folder anymore".format(count))
                         flag = 1
                         if file[-3:] == "mod":
                             mod.read_info(os.path.join(d, file))
-                        if file[-3:] == "bon":
+                        elif file[-3:] == "bon":
                             with open(os.path.join(d, file), "rb") as f:
                                 tree = res.read_filetree(f)
                                 for element in tree:
                                     element[0] += ".bon"
                                 res.unpack_res(f, tree, os.path.join(d, file))
-                        if file[-3:] == "anm":
+                        elif file[-3:] == "anm":
                             with open(os.path.join(d, file), "rb") as f:
                                 tree = res.read_filetree(f)
                                 for element in tree:
@@ -101,11 +104,11 @@ folder anymore".format(count))
     count = 0
     for d, dirs, files in os.walk(args.dst_dir):
         for file in files:
-            file_e = os.path.splitext(file)[1][1:]
+            file_e = os.path.splitext(file)[1][1:].lower()
             if file_e in convert:
                 count += 1
                 file_n = os.path.splitext(file)[0]
-                #print(os.path.join(d, file))
+                print(os.path.join(d, file))
                 if file_e == "adb":
                     try:
                         info = adb.read_info(os.path.join(d, file))
@@ -153,10 +156,21 @@ folder anymore".format(count))
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
                             f.write(mp.build_yaml(info))
                 elif file_e == "reg":
-                    info = reg.read_info(os.path.join(d, file))
+                    try:
+                        info = reg.read_info(os.path.join(d, file))
+                    except UnicodeEncodeError:
+                        ENCODE = "cp1251"
+                        info = reg.read_info(os.path.join(d, file))
+                        ENCODE = "cp866"
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(reg.build_yaml(info))
+                            try:
+                                f.write(reg.build_yaml(info))
+                            except UnicodeEncodeError:
+                                reg.ENCODE = "cp1251"
+                                info = reg.read_info(os.path.join(d, file))
+                                f.write(reg.build_yaml(info))
+                                reg.ENCODE = "cp866"
                 elif file_e == "sec":
                     info = sec.read_info(os.path.join(d, file))
                     if info != None:
