@@ -40,7 +40,7 @@ def convert_DXT(file, width, height, DXT3=False):
                 color[2] = [(2 * color[0][i] + color[1][i]) // 3 for i in range(4)]
                 color[3] = [(color[0][i] + 2 * color[1][i]) // 3 for i in range(4)]
             else:
-                color[2] = [(color[1][i] + color[3][i]) // 2 for i in range(4)]
+                color[2] = [(color[0][i] + color[1][i]) // 2 for i in range(4)]
                 color[3] = [0, 0, 0, 0]
 
             for x in range(4):
@@ -50,7 +50,7 @@ def convert_DXT(file, width, height, DXT3=False):
                         for k in range(3):
                             data[i * 4 + x, j * 4 + y, k] = color[row & 3][k]
                     else:
-                        data[i * 4 + x, j * 4 + y] = color[row & 3]
+                        data[i * 4 + x, j * 4 + y] = color[row & 3][:]
                     row >>= 2
 
     return data
