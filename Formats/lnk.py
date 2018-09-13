@@ -12,7 +12,6 @@ def build_level(level, info):
 
     return buf
 
-
 def build_yaml(info):
     return build_level(0, info)
 

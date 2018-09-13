@@ -2,17 +2,6 @@ import sys
 import os.path
 from binary_readers import *
 
-END = b"\x00\x00\x02\x0C\x02\x08\x01\x00\x00\x00" # 10 bytes at the end
-
-types = [".idb", # items
-         ".ldb", # levers
-         ".pdb", # perks
-         "prints.db", # prints
-         ".sdb", # spells
-         ".udb", # units
-         "acks.db", # acks
-         ".qdb"] # quests
-
 # S - string
 # I - 4b int
 # U - 4b unsigned
@@ -164,6 +153,15 @@ give quests 1,give quests 2,open zones,unknown,bonus number"]
      
 
 def find_db_struct(f_name):
+    types = [".idb", # items
+             ".ldb", # levers
+             ".pdb", # perks
+             "prints.db", # prints
+             ".sdb", # spells
+             ".udb", # units
+             "acks.db", # acks
+             ".qdb"] # quests
+         
     for i in range(len(types)):
         if f_name[- len(types[i]):] == types[i]:
             #print("Base type is", i)
@@ -339,7 +337,7 @@ def read_data(f_name):
             while file.tell() < reg_len:
                 data[-1].append(read_record(file, types_struct[base_type][i]))
         is_end = file.read(10)
-        if is_end != END:
+        if is_end != b"\x00\x00\x02\x0C\x02\x08\x01\x00\x00\x00":
             print("Some data after table!")
     return data
 

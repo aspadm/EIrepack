@@ -48,7 +48,7 @@ def read_key(file, key_type):
     
     return buf[0] if count == 1 else buf
 
-def read_tree(f_name):
+def read_info(f_name):
     with open(f_name, "rb") as file:
         magic = file.read(4)
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     #print_tree(read_tree("ai.reg"))
     #exit()
     if 2 <= len(sys.argv) <= 3:
-        tree = read_tree(sys.argv[1])
+        tree = read_info(sys.argv[1])
         
         if len(sys.argv) == 2:
             print(build_yaml(tree))

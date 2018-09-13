@@ -1,13 +1,13 @@
 import sys
 from binary_readers import *
 
-keys = ["blocks", "vertex_count", "normal_count", "texcoord_count",
-        "index_count", "vertex_component_count", "morph_component_count",
-        "group", "texture_number", "center", "min", "max", "radius",
-        "vertices", "normals", "texcoords", "indexes", "vertex_components",
-        "morph_components"]
-
 def build_yaml(info):
+    keys = ["blocks", "vertex_count", "normal_count", "texcoord_count",
+            "index_count", "vertex_component_count", "morph_component_count",
+            "group", "texture_number", "center", "min", "max", "radius",
+            "vertices", "normals", "texcoords", "indexes", "vertex_components",
+            "morph_components"]
+    
     buf = ""
 
     for i in range(len(info)):
