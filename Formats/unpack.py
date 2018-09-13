@@ -2,7 +2,7 @@ import argparse
 import os
 import os.path
 import shutil
-import res, mod, bon, adb, anm, cam
+import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -10,11 +10,11 @@ simple_copy = ["mp3", "rtf", "dat", "grp", "bik", "ini", "txt", "wav",
                "mat", "scr"]
 archives = ["mq", "mpr", "res", "bon", "mod", "anm"]
 convert = ["cam", "mob", "reg", "adb", "bon", "anm", "bon", "db", "idb",
-           "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb"]
+           "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb", "ldb"]
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="EIrepack v.0.3a \
+    parser = argparse.ArgumentParser(description="EIrepack v.0.9a \
 (Evil Islands resources unpacker and converter)",
                                      add_help=True)
     parser.add_argument("src_dir", type=str,
@@ -23,6 +23,8 @@ if __name__ == "__main__":
                     help="output folder")
     parser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
+    parser.add_argument("-f", "--force", action="store_true",
+                    help="force file header check")
 
     args = parser.parse_args()
 
@@ -128,6 +130,39 @@ folder anymore".format(count))
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
                             f.write(cam.build_yaml(info))
+                elif file_e in ["idb", "ldb", "pdb", "db", "sdb", "udb", "qdb"]:
+                    data = db.read_data(os.path.join(d, file))
+                    with open(os.path.join(d, file) + ".csv", "w") as f:
+                        f.write(db.build_data(data))
+                elif file_e == "fig":
+                    info = fig.read_info(os.path.join(d, file))
+                    if info != None:
+                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+                            f.write(fig.build_yaml(info))
+                elif file_e == "lnk":
+                    info = lnk.read_info(os.path.join(d, file))
+                    if info != None:
+                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+                            f.write(lnk.build_yaml(info))
+                elif file_e == "mmp":
+                    image = mmp.read_image(os.path.join(d, file))
+                    image.save(os.path.join(d, file_n) + ".png")
+                elif file_e == "mp":
+                    info = mp.read_info(os.path.join(d, file))
+                    if info != None:
+                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+                            f.write(mp.build_yaml(info))
+                elif file_e == "reg":
+                    info = reg.read_info(os.path.join(d, file))
+                    if info != None:
+                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+                            f.write(reg.build_yaml(info))
+                elif file_e == "sec":
+                    info = sec.read_info(os.path.join(d, file))
+                    if info != None:
+                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+                            f.write(sec.build_yaml(info))
+                os.remove(os.path.join(d, file))
 
     if args.verbose:
         print("{} files converted".format(count))
