@@ -50,9 +50,9 @@ def read_info(f_name):
     stree = tree()
     arr = sorted(os.listdir(f_name))
     for name in arr:
-        if "." in name:
+        if "." in name or "(" in name:
             continue
-        add_node(stree, name.split())
+        add_node(stree, name.lower().split())
 
     info = convert_tree(stree, f_name)
     
