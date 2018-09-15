@@ -2,7 +2,7 @@ import argparse
 import os
 import os.path
 import shutil
-import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec
+import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -27,6 +27,8 @@ if __name__ == "__main__":
                     help="skip archive extraction")
     parser.add_argument("-c", "--skip_copy", action="store_true",
                     help="skip file copy")
+    parser.add_argument("-t", "--text_joint", action="store_true",
+                    help="joint game strings")
 
     args = parser.parse_args()
 
@@ -113,7 +115,7 @@ folder anymore".format(count))
                     try:
                         info = adb.read_info(os.path.join(d, file))
                     except:
-                        print("ADB ERROR")
+                        print("ADB ERROR in file \"{}\"".format(file))
                         info = None
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
@@ -159,9 +161,9 @@ folder anymore".format(count))
                     try:
                         info = reg.read_info(os.path.join(d, file))
                     except UnicodeEncodeError:
-                        ENCODE = "cp1251"
+                        reg.ENCODE = "cp1251"
                         info = reg.read_info(os.path.join(d, file))
-                        ENCODE = "cp866"
+                        reg.ENCODE = "cp866"
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
                             try:
@@ -180,3 +182,33 @@ folder anymore".format(count))
 
     if args.verbose:
         print("{} files converted".format(count))
+        print("\nJoint game strings\n")
+
+    # Конвертация текстов игры
+    # Примечание: в оригинальной игре есть кривой файл -
+    # "Gipat Medium (тип материала - кожа), мы его пропускаем
+    count = 0
+    if args.text_joint:
+        with open(os.path.join(args.dst_dir,
+                               "Res", "texts", "texts.yaml"), "w") as file:
+            file.write(text.build_yaml(text.read_info(os.path.join(args.dst_dir,
+                                                                   "Res", "texts"))))
+        for file in os.listdir(os.path.join(args.dst_dir, "Res", "texts")):
+            if "." in file or "(" in file:
+                continue
+            os.remove(os.path.join(args.dst_dir, "Res", "texts", file))
+            count += 1
+            
+        with open(os.path.join(args.dst_dir, "Res",
+                               "textslmp", "textslmp.yaml"), "w") as file:
+            file.write(text.build_yaml(text.read_info(os.path.join(args.dst_dir,
+                                                                   "Res",
+                                                                   "textslmp"))))
+        for file in os.listdir(os.path.join(args.dst_dir, "Res", "textslmp")):
+            if "." in file or "(" in file:
+                continue
+            os.remove(os.path.join(args.dst_dir, "Res/textslmp", file))
+            count += 1
+            
+        if args.verbose:
+            print("{} files converted".format(count))
