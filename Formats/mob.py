@@ -2,7 +2,7 @@ import sys
 from binary_readers import *
 
 def build_yaml(info):
-    buf = ""
+    buf = str(info)
         
     return buf
 
@@ -105,7 +105,7 @@ magic = {
     3149660172: ("UNIT_LOGIC_HELP", "Float"),
     3149725697: ("GUARD_PT_POSITION", "Plot"),
     3149791232: ("ACTION_PT", "Record"),
-    7684:       ("VSS_ID", "Dword"),
+    7684:       ("VSS_ID", "Dword"),#"Byte")
     7694:       ("VSS_VARIABLE", "Record"),
     43527:      ("LIGHT_COLOR", "Plot"),
     45064:      ("OBJSECTXTR", "String"),
@@ -164,6 +164,64 @@ magic = {
     2899242187: ("SS_TEXT", "StringEncrypted")
 }
 
+def read_node(info, file):
+    m_number, node_len = read_uint(file, 2)
+    node_name, node_type = magic[m_number]
+
+    if node_type == "Record":
+        pos = file.tell() + node_len - 8
+        info.append([node_name, []])
+        while file.tell() < pos:
+            read_node(info[-1][1], file)
+    elif node_type == "Null":
+        if node_len != 8:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+    elif node_type == "Dword":
+        if node_len != 12:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, read_uint(file)])
+    elif node_type == "Byte":
+        if node_len != 9:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, read_byte(file)])
+    elif node_type == "Float":
+        if node_len != 12:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, read_float(file)])
+    elif node_type == "String":
+        info.append([node_name, read_str(file, node_len - 8)])
+    elif node_type == "Quaternion" or node_type == "Rectangle":
+        if node_len != 24:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, tuple(read_float(file, 4))])
+    elif node_type == "Plot":
+        if node_len != 20:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, tuple(read_float(file, 3))])
+    elif node_type == "StringArray":
+        records = read_uint(file)
+        buf = []
+        for i in range(records):
+            read_uint(file)
+            str_len = read_uint(file)
+            buf.append(read_str(file, str_len-8))
+        info.append([node_name, tuple(buf)])
+    else:
+        print(node_type, "at", file.tell())
+        info.append([node_name])
+        file.read(node_len - 8)
+
 def read_info(file_name):
     info = []
     with open(file_name, "rb") as file:
@@ -173,11 +231,7 @@ def read_info(file_name):
         else:
             file.seek(0)
 
-        print(magic[read_uint(file)])
-        main_block_len = read_uint(file)
-
-        #while file.tell() < main_block_len:
-            
+        read_node(info, file)            
 
     return info
 
