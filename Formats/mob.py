@@ -1,10 +1,46 @@
 import sys
 from binary_readers import *
 
+def convert_node(node, buf, level=0):
+    for subnode in node:
+        if type(subnode) != list:
+            print(node)
+            return
+        buf[0] += "  " * level + subnode[0] + ":"
+        if type(subnode[1]) == str:
+            subnode[1] = subnode[1].replace("\r\n", "\\n")
+            subnode[1] = subnode[1].replace("\n", "\\n")
+            subnode[1] = subnode[1].replace("\"", "\\\"")
+            buf[0] += " \"" + subnode[1] + "\"\n"
+        elif type(subnode[1]) == tuple:
+            if len(subnode[1]) == 0:
+                buf[0] += " None\n"
+            else:
+                buf[0] += "\n"
+                for obj in subnode[1]:
+                    buf[0] += "  " * (level + 1) + "- "
+                    if type(obj) == str:
+                        obj = obj.replace("\r\n", "\\n")
+                        obj = obj.replace("\n", "\\n")
+                        obj = obj.replace("\r\n", "\\n")
+                        buf[0] += "\"" + obj + "\"\n"
+                    else:
+                        buf[0] += str(obj) + "\n"
+        elif type(subnode[1]) == int:
+            buf[0] += " " + str(subnode[1]) + "\n"
+        elif type(subnode[1]) == float:
+            buf[0] += " " + str(subnode[1]) + "\n"
+        elif type(subnode[1]) == list:
+            buf[0] += "\n"
+            convert_node(subnode[1], buf, level + 1)
+        else:
+            print("WTF")
+    
 def build_yaml(info):
-    buf = str(info)
-        
-    return buf
+    buf = [""]
+    convert_node(info, buf)
+    
+    return buf[0]
 
 # Magics
 magic = {
@@ -164,6 +200,22 @@ magic = {
     2899242187: ("SS_TEXT", "StringEncrypted")
 }
 
+def decrypt_str(file, str_len):
+    u32max = 4294967295
+    u32 = 2 ** 32
+
+    key = read_uint(file)
+
+    buf_str = ""
+    buf = bytearray(1)
+    for i in range(str_len):
+        data = read_byte(file)
+        key += ((((((key * 13 % u32) << 4 & u32max) + key) % u32) << 8 & u32max) - key) * 4 % u32 + 2531011
+        buf[0] = data ^ (key >> 16 & 255)
+        buf_str += chr(buf[0])
+
+    return buf_str
+
 def read_node(info, file):
     m_number, node_len = read_uint(file, 2)
     node_name, node_type = magic[m_number]
@@ -217,9 +269,24 @@ def read_node(info, file):
             str_len = read_uint(file)
             buf.append(read_str(file, str_len-8))
         info.append([node_name, tuple(buf)])
+    elif node_type == "UnitStats":
+        if node_len != 180:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, tuple(read_uint(file, 43))])
+    elif node_type == "Diplomacy":
+        if node_len != 4104:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            file.read(4096)
+            info.append([node_name, "NOT_IMPLEMENTED"])
+    elif node_type == "StringEncrypted":
+        info.append([node_name, decrypt_str(file, node_len - 12)])
     else:
         print(node_type, "at", file.tell())
-        info.append([node_name])
+        info.append([node_name, "NOT_NOW"])
         file.read(node_len - 8)
 
 def read_info(file_name):
