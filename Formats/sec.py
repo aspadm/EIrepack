@@ -76,9 +76,12 @@ def build_obj(info, altitude, off_x, off_y):
         for j in range(65):
             buf += "vt {} {}\n".format(j / 64, i / 32)
 
+    need_water_mask = 0 if len(info) != 4 else 3
     # Генерация полигонов
     for j in range(16):
         for i in range(16):
+            if need_water_mask and info[need_water_mask][j*16 + i] != 1:
+                continue
             tex_p = info[2 if info[0] == 0 else 3][j * 16 + i]
             index = tex_p[1] * 64 + tex_p[0]
             tex_c = [1 + index % 32 * 2 + index // 32 * 130,
