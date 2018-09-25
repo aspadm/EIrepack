@@ -36,7 +36,7 @@ def build_yaml(filetree, f_name):
     
     ftree = tree()
     for file in filetree:
-        path = [f_name] + file[0].split("\\")
+        path = [f_name] + file[0].split("/")
         add_file(ftree, path)
 
     gen_tree(ftree)
@@ -66,7 +66,8 @@ def read_filetree(file):
 
     for i in range(table_size):
         file.seek(buf[i][5] + names_offset)
-        filetree.append([read_str(file, buf[i][4], ENCODE), buf[i][2], buf[i][1]])
+        filetree.append([read_str(file, buf[i][4], ENCODE).replace("\\", "/"),
+                         buf[i][2], buf[i][1]])
 
     return filetree
 
@@ -74,9 +75,9 @@ def unpack_res(file, filetree, file_name):
     f_name = os.path.splitext(file_name)[0]
     for element in filetree:
         name = os.path.dirname(element[0])
-        if not os.path.exists(f_name + "\\" + name):
-            os.makedirs(f_name + "\\" + name)
-        with open(f_name + "\\" + element[0], "wb") as new_file:
+        if not os.path.exists(os.path.join(f_name, name)):
+            os.makedirs(os.path.join(f_name, name))
+        with open(os.path.join(f_name, element[0]), "wb") as new_file:
             file.seek(element[1])
             buf = file.read(element[2])
             new_file.write(buf)
