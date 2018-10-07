@@ -6,7 +6,7 @@ def build_yaml(info):
         "texture_size", "tiles_count", "tile_size", "objects_count",
         "animated_tiles_count"]
 
-    terrain_type = ["undefined", "water_no_texture", "water", "grass"]
+    terrain_type = ["undefined", "water_no_texture", "grass", "water"]
 
     buf = ""
     for i in range(len(keys)):
@@ -23,6 +23,9 @@ def build_yaml(info):
             buf += "    self_illumination: " + str(info[9][i][5]) + "\n"
             buf += "    wave_multiplier: " + str(info[9][i][6]) + "\n"
             buf += "    warp_speed: " + str(info[9][i][7]) + "\n"
+            buf += "    unknown:\n      - " + str(info[9][i][8]) + "\n"
+            buf += "      - " + str(info[9][i][9]) + "\n"
+            buf += "      - " + str(info[9][i][10]) + "\n"
 
     buf += "id_array:\n"
     for i in info[10]:
@@ -51,7 +54,8 @@ def read_info(file_name):
         info.append([])
         for i in range(info[7]):
             info[-1].append([read_uint(file)])
-            info[-1][-1].extend(read_float(file, 10))
+            info[-1][-1].extend(read_float(file, 7))
+            info[-1][-1].extend(read_uint(file, 3))
 
         info.append(read_uint(file, info[5]))
 
