@@ -3,17 +3,21 @@ from binary_readers import *
 
 def build_yaml(info):
     keys = ["max_altitude", "x_sectors", "y_sectors", "textures_count",
-        "texture_size", "tiles_count", "tile_size", "objects_count",
+        "texture_size", "tiles_count", "tile_size", "materials_count",
         "animated_tiles_count"]
 
     terrain_type = ["undefined", "water_no_texture", "grass", "water"]
+
+    tile_type = ["grass", "ground", "stone", "sand", "rock", "field", "water",
+                 "road", "(empty)", "snow", "ice", "drygrass", "snowballs",
+                 "lava", "swamp", "highrock"]
 
     buf = ""
     for i in range(len(keys)):
         buf += keys[i] + ": " + str(info[i]) + "\n"
 
     if info[7] > 0:
-        buf += "map_objects:\n"
+        buf += "map_materials:\n"
         for i in range(info[7]):
             buf += "  - type: \"" + terrain_type[info[9][i][0]] + "\"\n"
             buf += "    color_r: " + str(info[9][i][1]) + "\n"
@@ -29,7 +33,7 @@ def build_yaml(info):
 
     buf += "id_array:\n"
     for i in info[10]:
-        buf += "  - " + str(i) + "\n"
+        buf += "  - " + tile_type[i] + "\n"
 
     if info[8] > 0:
         buf += "animated_tiles:\n"
