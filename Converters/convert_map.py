@@ -30,17 +30,42 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
 
     for j in range(16):
         for i in range(16):
-            if water_mask != None and water_mask[j*16 + i] != 1:
-                continue
+            if water_mask != None:
+##                if water_mask[j*16 + i] == 0:
+##                    continue
+                if water_mask[j*16 + i] == 65535:
+                    for y in range(2):
+                        for x in range(2):
+                            ind_buf.extend([33 + j * 66 + y * 33 + i * 2 + x,
+                                            33 + j * 66 + y * 33 + i * 2 + x,
+                                            0,
+                                            j * 66 + y * 33 + i * 2 + x,
+                                            j * 66 + y * 33 + i * 2 + x,
+                                            0,
+                                            1  + j * 66 + y * 33 + i * 2 + x,
+                                            1  + j * 66 + y * 33 + i * 2 + x,
+                                            0])
+                            ind_buf.extend([1  + j * 66 + y * 33 + i * 2 + x,
+                                            1  + j * 66 + y * 33 + i * 2 + x,
+                                            0,
+                                            34 + j * 66 + y * 33 + i * 2 + x,
+                                            34 + j * 66 + y * 33 + i * 2 + x,
+                                            0,
+                                            33 + j * 66 + y * 33 + i * 2 + x,
+                                            33 + j * 66 + y * 33 + i * 2 + x,
+                                            0])
+                    continue
+                else:
+                    print(water_mask[j*16 + i])
             tex_p = t_arr[j * 16 + i]
             index = tex_p[1] * 64 + tex_p[0]
-            tex_c = [0 + index % 32 * 2 + index // 32 * 130,
+            tex_c = [    index % 32 * 2 + index // 32 * 130,
                      1 + index % 32 * 2 + index // 32 * 130,
                      2 + index % 32 * 2 + index // 32 * 130,
-                     0 + index % 32 * 2 + index // 32 * 130 + 65,
+                         index % 32 * 2 + index // 32 * 130 + 65,
                      1 + index % 32 * 2 + index // 32 * 130 + 65,
                      2 + index % 32 * 2 + index // 32 * 130 + 65,
-                     0 + index % 32 * 2 + index // 32 * 130 + 130,
+                         index % 32 * 2 + index // 32 * 130 + 130,
                      1 + index % 32 * 2 + index // 32 * 130 + 130,
                      2 + index % 32 * 2 + index // 32 * 130 + 130]
             if tex_p[2] == 3:
@@ -78,6 +103,47 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
             
     return vert_buf, norm_buf, tex_buf, ind_buf
 
+def prepare_nodes(mesh, mat, i, j, name, v_arr, t_arr, altitude, tiles_count, water_mask=None):
+    subname = "land" if water_mask == None else "liquid"
+
+    # convert sector data
+    vert, norm, tex, ind = create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask)
+    print(i, j, len(ind))
+    # prepare geometry data
+    vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
+                                         ("X", "Y", "Z"))
+    norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
+                                         ("X", "Y", "Z"))
+    tex_source = dae.source.FloatSource("tex_arr", np.array(tex),
+                                        ("S", "T"))
+    ind_source = np.array(ind)
+
+    # create empty mesh
+    geom = dae.geometry.Geometry(mesh, subname + "_{:03}_{:03}".format(i, j),
+                                 subname + " sector {:03}:{:03}".format(i, j),
+                                 [vert_source, norm_source, tex_source])
+
+    # describe mesh data structure
+    input_list = dae.source.InputList()
+    input_list.addInput(0, "VERTEX", "#vert_arr")
+    input_list.addInput(1, "NORMAL", "#norm_arr")
+    input_list.addInput(2, "TEXCOORD", "#tex_arr")
+
+    # generate geometry data
+    triset = geom.createTriangleSet(ind_source, input_list, "mapmaterial")
+    geom.primitives.append(triset)
+    mesh.geometries.append(geom)
+
+    # map sector offset
+    pos = dae.scene.TranslateTransform(32 * i, 32 * j, 0)
+    # reinstance material
+    matnode = dae.scene.MaterialNode("mapmaterial", mat, inputs=[])
+    # add sector geometries to map node
+    geomnodes = [dae.scene.GeometryNode(geom, [matnode])]
+
+    return dae.scene.Node(name + "_" + subname + "_{:03}_{:03}".format(i, j),
+                                children=geomnodes, transforms=[pos])
+
 def convert_map(name):
     map_name = name.split("\\")[-1].split("/")[-1]
     
@@ -85,7 +151,7 @@ def convert_map(name):
     map_info = mp.read_info(name + ".mp")
 
     # join tile textures in one atlas
-    join_tiles.join_tiles(name + "00", map_info[3])
+    #join_tiles.join_tiles(name + "00", map_info[3])
 
     # common information
     contrib = dae.asset.Contributor(authoring_tool="EIrepack",
@@ -114,6 +180,7 @@ def convert_map(name):
     mesh.images.append(image)
 
     nodes = []
+    liquid_nodes = []
 
     # convert map chunks
     for i in range(map_info[1]):
@@ -121,54 +188,32 @@ def convert_map(name):
             # read map sector
             info = sec.read_info(name + "{:03}{:03}.sec".format(i, j))
 
-            # convert sector data
-            vert, norm, tex, ind = create_geometry(info[1][:],
-                                                   info[3 if info[0] else 2][:],
-                                                   map_info[0],
-                                                   map_info[5])
-            # prepare geometry data
-            vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
-                                                 ("X", "Y", "Z"))
-            norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
-                                                 ("X", "Y", "Z"))
-            tex_source = dae.source.FloatSource("tex_arr", np.array(tex),
-                                                ("S", "T"))
-            ind_source = np.array(ind)
             
-            # create empty mesh
-            geom = dae.geometry.Geometry(mesh, "land_{:03}_{:03}".format(i, j),
-                                         "Land sector {:03}:{:03}".format(i, j),
-                                         [vert_source, norm_source, tex_source])
-
-            # describe mesh data structure
-            input_list = dae.source.InputList()
-            input_list.addInput(0, "VERTEX", "#vert_arr")
-            input_list.addInput(1, "NORMAL", "#norm_arr")
-            input_list.addInput(2, "TEXCOORD", "#tex_arr")
-
-            # generate geometry data
-            triset = geom.createTriangleSet(ind_source, input_list, "mapmaterial")
-            geom.primitives.append(triset)
-            mesh.geometries.append(geom)
+            nodes.append(prepare_nodes(mesh, mat, i, j, name, info[1][:],
+                                       info[3 if info[0] else 2][:],
+                                       map_info[0], map_info[5]))
+##info[1][:],
+##                                           info[3 if info[0] else 2][:],
+##                                           map_info[0],
+##                                           map_info[5]
             
+##            nodes.append(prepare_nodes(i, j, name, v_arr, t_arr, altitude,
+##                                       tiles_count))
+            if info[0] != 0:
+                liquid_nodes.append(prepare_nodes(mesh, mat, i, j, name, info[2][:],
+                                    info[4][:],
+                                    map_info[0], map_info[5], info[5]))
 ##            if info[0] != 0:
 ##                geomnodes.append(create_geometry("liquid_{:03}_{:03}".format(i, j),
 ##                                                 info[2],
 ##                                                 info[4], info[5],
 ##                                                 map_info[0]))
-            # map sector offset
-            pos = dae.scene.TranslateTransform(32 * i, 32 * j, 0)
-            # reinstance material
-            matnode = dae.scene.MaterialNode("mapmaterial", mat, inputs=[])
-            # add sector geometries to map node
-            geomnodes = [dae.scene.GeometryNode(geom, [matnode])]
-            nodes.append(dae.scene.Node(name + "_{:03}_{:03}".format(i, j),
-                                        children=geomnodes, transforms=[pos]))
 
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
     mesh.lights.append(sun)
     terrain_node = dae.scene.Node("lanscape", children=nodes)
+    liquid_node = dae.scene.Node("liquid", children=liquid_nodes)
     sun_node = dae.scene.Node("sunshine", children=[dae.scene.LightNode(sun)],
                                 transforms=[dae.scene.MatrixTransform(np.array(
                                     [1, 0, 0, 0,
@@ -176,7 +221,7 @@ def convert_map(name):
                                      0, 0, 1, 0,
                                      0, 0, 0, 1]))])
     # create main scene
-    myscene = dae.scene.Scene(map_name, [sun_node, terrain_node])
+    myscene = dae.scene.Scene(map_name, [sun_node, terrain_node, liquid_node])
     mesh.scenes.append(myscene)
     mesh.scene = myscene
 
