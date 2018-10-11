@@ -3,7 +3,7 @@ import os
 import os.path
 import shutil
 import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
-       convert_map
+       convert_map, compact
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -99,9 +99,16 @@ folder anymore".format(count))
                                 res.unpack_res(f, filetree, os.path.join(d, file))
                         os.remove(os.path.join(d, file))
 
-    # Конвертация файлов
+    
     if args.verbose:
         print("\nAfter {} iterations all archives unpacked".format(count))
+        print("\nStart figures folder reorganisation\n")
+
+    compact.compact_figs(os.path.join(args.dst_dir, "Res", "figures"))
+
+    # Конвертация файлов
+    if args.verbose:
+        print("\nFigures folder reorganised\n")
         print("\nConvert files\n")
 
     maps = []
