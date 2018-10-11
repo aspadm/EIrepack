@@ -151,7 +151,7 @@ def convert_map(name):
     map_info = mp.read_info(name + ".mp")
 
     # join tile textures in one atlas
-    #join_tiles.join_tiles(name + "00", map_info[3])
+    join_tiles.join_tiles(name + "00", map_info[3])
 
     # common information
     contrib = dae.asset.Contributor(authoring_tool="EIrepack",

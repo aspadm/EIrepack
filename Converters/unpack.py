@@ -2,14 +2,15 @@ import argparse
 import os
 import os.path
 import shutil
-import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text
+import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
+       convert_map
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
 simple_copy = ["mp3", "rtf", "dat", "grp", "bik", "ini", "txt", "wav",
                "mat", "scr"]
 archives = ["mq", "mpr", "res", "bon", "mod", "anm"]
-convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", #"mob",
+convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", "mob",
            "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb", "ldb"]
 
 
@@ -103,6 +104,7 @@ folder anymore".format(count))
         print("\nAfter {} iterations all archives unpacked".format(count))
         print("\nConvert files\n")
 
+    maps = []
     count = 0
     for d, dirs, files in os.walk(args.dst_dir):
         for file in files:
@@ -153,10 +155,13 @@ folder anymore".format(count))
                     image = mmp.read_image(os.path.join(d, file))
                     image.save(os.path.join(d, file_n) + ".png")
                 elif file_e == "mp":
-                    info = mp.read_info(os.path.join(d, file))
-                    if info != None:
-                        with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(mp.build_yaml(info))
+                    maps.append([d, file_n])
+                    continue
+                    # map convertion later
+##                    info = mp.read_info(os.path.join(d, file))
+##                    if info != None:
+##                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+##                            f.write(mp.build_yaml(info))
                 elif file_e == "reg":
                     try:
                         info = reg.read_info(os.path.join(d, file))
@@ -174,21 +179,53 @@ folder anymore".format(count))
                                 f.write(reg.build_yaml(info))
                                 reg.ENCODE = "cp866"
                 elif file_e == "sec":
-                    info = sec.read_info(os.path.join(d, file))
+                    continue
+                    # map convertion later
+##                    info = sec.read_info(os.path.join(d, file))
+##                    if info != None:
+##                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+##                            f.write(sec.build_yaml(info))
+                elif file_e == "mob":
+                    info = mob.read_info(os.path.join(d, file))
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(sec.build_yaml(info))
+                            f.write(mob.build_yaml(info))
                 os.remove(os.path.join(d, file))
 
     if args.verbose:
         print("{} files converted".format(count))
-        print("\nJoint game strings\n")
+        print("\nConvert game maps\n")
+
+    # Конвертация карт
+    # Для этого используются MP, SEC файлы карты и дополнительные текстуры
+    count = 0
+    for i in maps:
+        map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
+        count += map_info[3] + map_info[1] * map_info[2] + 1
+        for j in range(map_info[3]):
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
+                                         i[1] + "{:03}.png".format(j)),
+                            os.path.join(i[0], i[1] + "{:03}.png".format(j)))
+        convert_map.convert_map(os.path.join(args.dst_dir, i[1] + ".mp"))
+
+        # Удаляем исходные файлы
+        for j in range(map_info[1]):
+            for k in range(map_info[2]):
+                os.remove(os.path.join(i[0], i[1] + \
+                                       "{:03}{:03}.sec".format(j, k)))
+        os.remove(os.path.join(i[0], i[1] + ".mp"))
+
+    if args.verbose:
+        print("{} files converted ({} maps)".format(count, len(maps)))
 
     # Конвертация текстов игры
     # Примечание: в оригинальной игре есть кривой файл -
     # "Gipat Medium (тип материала - кожа), мы его пропускаем
     count = 0
     if args.text_joint:
+        if args.verbose:
+            print("\nJoint game strings\n")
+            
         with open(os.path.join(args.dst_dir,
                                "Res", "texts", "texts.yaml"), "w") as file:
             file.write(text.build_yaml(text.read_info(os.path.join(args.dst_dir,
