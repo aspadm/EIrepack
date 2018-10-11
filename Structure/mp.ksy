@@ -48,6 +48,11 @@ seq:
     repeat: expr
     repeat-expr: tiles_count
     enum: tile_type
+  - id: animated_tiles
+    type: animated_tile
+    doc: Animated tiles
+    repeat: expr
+    repeat-expr: animated_tiles_count
 types:
   material:
     doc: Material parameters
@@ -92,6 +97,15 @@ types:
         1: water_notexture
         2: grass
         3: water
+  animated_tile:
+    doc: Animated tile parameters
+    seq:
+      - id: start_index
+        type: u2
+        doc: First tile of animation
+      - id: length
+        type: u2
+        doc: Animation frames count
 enums:
   tile_type:
     0: grass
