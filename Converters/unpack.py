@@ -208,18 +208,25 @@ folder anymore".format(count))
     count = 0
     for i in maps:
         map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
+        if args.verbose:
+            print(os.path.join(i[0], i[1]),
+                  "  + {} textures and {}x{} sectors".format(map_info[3],
+                                                             map_info[1],
+                                                             map_info[2]))
         count += map_info[3] + map_info[1] * map_info[2] + 1
         for j in range(map_info[3]):
             shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
                                          i[1] + "{:03}.png".format(j)),
                             os.path.join(i[0], i[1] + "{:03}.png".format(j)))
-        convert_map.convert_map(os.path.join(args.dst_dir, i[1] + ".mp"))
+        convert_map.convert_map(os.path.join(i[0], i[1]))
 
         # Удаляем исходные файлы
         for j in range(map_info[1]):
             for k in range(map_info[2]):
                 os.remove(os.path.join(i[0], i[1] + \
                                        "{:03}{:03}.sec".format(j, k)))
+        for j in range(map_info[3]):
+            os.remove(os.path.join(i[0], i[1] + "{:03}.png".format(j)))
         os.remove(os.path.join(i[0], i[1] + ".mp"))
 
     if args.verbose:
