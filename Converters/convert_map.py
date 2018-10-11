@@ -55,8 +55,8 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                                             33 + j * 66 + y * 33 + i * 2 + x,
                                             0])
                     continue
-                else:
-                    print(water_mask[j*16 + i])
+                #else:
+                #    print(water_mask[j*16 + i])
             tex_p = t_arr[j * 16 + i]
             index = tex_p[1] * 64 + tex_p[0]
             tex_c = [    index % 32 * 2 + index // 32 * 130,
@@ -108,7 +108,7 @@ def prepare_nodes(mesh, mat, i, j, name, v_arr, t_arr, altitude, tiles_count, wa
 
     # convert sector data
     vert, norm, tex, ind = create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask)
-    print(i, j, len(ind))
+    #print(i, j, len(ind))
     # prepare geometry data
     vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
                                          ("X", "Y", "Z"))
@@ -130,14 +130,14 @@ def prepare_nodes(mesh, mat, i, j, name, v_arr, t_arr, altitude, tiles_count, wa
     input_list.addInput(2, "TEXCOORD", "#tex_arr")
 
     # generate geometry data
-    triset = geom.createTriangleSet(ind_source, input_list, "mapmaterial")
+    triset = geom.createTriangleSet(ind_source, input_list, "mapmaterial0")
     geom.primitives.append(triset)
     mesh.geometries.append(geom)
 
     # map sector offset
     pos = dae.scene.TranslateTransform(32 * i, 32 * j, 0)
     # reinstance material
-    matnode = dae.scene.MaterialNode("mapmaterial", mat, inputs=[])
+    matnode = dae.scene.MaterialNode("mapmaterial0", mat, inputs=[])
     # add sector geometries to map node
     geomnodes = [dae.scene.GeometryNode(geom, [matnode])]
 
@@ -164,20 +164,40 @@ def convert_map(name):
     mesh = dae.Collada()
     mesh.assetInfo = asset
 
-    # create texture material
-    image = dae.material.CImage("maptexture", "./" + map_name.lower() + ".png")
-    surface = dae.material.Surface("maptexture_surface", image)
-    sampler2d = dae.material.Sampler2D("maptexture_sampler", surface)
-    texmap = dae.material.Map(sampler2d, "UVSET0")
+    
+    mats = []
+    for i in range(map_info[7]):
+        # create texture material
+        image = dae.material.CImage("maptexture{:}".format(i),
+                                    "./" + map_name.lower() + ".png")
+        surface = dae.material.Surface("maptexture_surface{:}".format(i),
+                                       image)
+        sampler2d = dae.material.Sampler2D("maptexture_sampler{:}".format(i),
+                                           surface)
+        texmap = dae.material.Map(sampler2d, "UVSET0")
+        
+        effect = dae.material.Effect("effect{:}".format(i),
+                                     [surface, sampler2d], "blinn",
+                                     diffuse=texmap if map_info[9][i][0] != 0\
+                                     else (map_info[9][i][1],
+                                           map_info[9][i][2],
+                                           map_info[9][i][3]),
+                                     transparency=map_info[9][i][4],
+                                     ambient=(map_info[9][i][1],
+                                           map_info[9][i][2],
+                                           map_info[9][i][3]),
+                                     specular=(map_info[9][i][1],
+                                           map_info[9][i][2],
+                                           map_info[9][i][3]))
+        mat = dae.material.Material("material{:}".format(i),
+                                    "mapmaterial{:}".format(i), effect)
 
-    effect = dae.material.Effect("effect0", [surface, sampler2d], "phong",
-                                 diffuse=texmap)
-    mat = dae.material.Material("material0", "mapmaterial", effect)
+        # add material in mesh
+        mesh.effects.append(effect)
+        mesh.materials.append(mat)
+        mesh.images.append(image)
 
-    # add material in mesh
-    mesh.effects.append(effect)
-    mesh.materials.append(mat)
-    mesh.images.append(image)
+        mats.append(mat)
 
     nodes = []
     liquid_nodes = []
