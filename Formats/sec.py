@@ -11,7 +11,7 @@ def unpack_normal(normal):
 def build_yaml(info):
     buf = ""
 
-    buf += "water: " + str(info[0]) + "\n"
+    buf += "liquids: " + str(info[0]) + "\n"
     buf += "land_vertices:\n"
 
     cur_index = 1
@@ -25,7 +25,7 @@ def build_yaml(info):
     cur_index += 1
 
     if info[0] != 0:
-        buf += "water_vertices:\n"
+        buf += "liquid_vertices:\n"
         for vert in info[cur_index]:
             buf += "  - x_offset: " + str(vert[0]) + "\n"
             buf += "    y_offset: " + str(vert[1]) + "\n"
@@ -43,7 +43,7 @@ def build_yaml(info):
     cur_index += 1
 
     if info[0] != 0:
-        buf += "water_textures:\n"
+        buf += "liquid_textures:\n"
         for i in info[cur_index]:
             buf += "  - index: " + str(i[0]) + "\n"
             buf += "    texture: " + str(i[1]) + "\n"
@@ -51,7 +51,7 @@ def build_yaml(info):
         cur_index += 1
 
     if info[0] != 0:
-        buf += "water_visibility:\n"
+        buf += "liquid_material:\n"
         for i in info[cur_index]:
             buf += "  - " + str(i) + "\n"
 
