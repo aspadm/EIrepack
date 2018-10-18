@@ -55,9 +55,8 @@ def build_yaml(info):
                                                                    v3[2])
             elif i == 17:
                 for v3 in info[i]:
-                    buf += "  - v: {}\n    n: {}\n    t: {}\n".format(v3[0],
-                                                                      v3[1],
-                                                                      v3[2])
+                    buf += "  - v: {}\n    vi: {}\n    n: {}\n    ni: {}\
+\n    t: {}\n".format(v3[0], v3[1], v3[2], v3[3], v3[4])
             elif i == 18:
                 for v2 in info[i]:
                     buf += "  - m: {}\n    v: {}\n".format(v2[0], v2[1])
@@ -85,13 +84,23 @@ def read_info(file_name):
 
         info.append(read_float(file, n))
 
+        # Vertex blocks
         info.append([[[read_float(file, 4) for j in range(n)] for xyz in range(3)] for i in range(info[1])])
+        # Normals
         info.append([[read_float(file, 4) for xyzw in range(4)] for i in range(info[2])])
 
+        # UV
         info.append([read_float(file, 2) for j in range(info[3])])
+        # Indices
         info.append([read_ushort(file, 3) for i in range(info[4])])
 
-        info.append([read_ushort(file, 3) for i in range(info[5])])
+        # Vertex components
+        info.append([])
+        for i in range(info[5]):
+            buf = read_ushort(file, 3)
+            info[-1].append([buf[0] >> 2, buf[0] & 3, buf[1] >> 2,
+                             buf[1] & 3, buf[2]])
+        # Deformation
         info.append([read_ushort(file, 2) for i in range(info[6])])
 
     return info
