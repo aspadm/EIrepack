@@ -420,13 +420,12 @@ def trilinear(arr, coefs=[0, 0, 0]):
 
     return buf
 
-def convert_model(name):
+def convert_to_obj(name):
     model_name = name.split("\\")[-1].split("/")[-1]
     model_folder = name[:-len(model_name)]
 
     model_tree = lnk.read_info(name + ".lnk")
     parts_list = flat_tree(model_tree)
-    #print(parts_list)
 
     with open(name + ".mtl", "w") as mtl:
         mtl.write("newmtl material_0\nmap_Kd " +
@@ -467,6 +466,141 @@ def convert_model(name):
 
         with open(model_folder + part_name + ".obj", "w") as file:
             file.write(obj_buf)
+
+def create_geometry(part_data):
+    vert_buf = []
+    norm_buf = []
+    tex_buf = []
+    ind_buf = []
+    
+    for i in range(part_data[1]):
+        for j in range(4):
+            vert_buf.extend([part_data[13][i][0][0][j],
+                             part_data[13][i][1][0][j],
+                             part_data[13][i][2][0][j]])
+
+    for i in range(part_data[2]):
+        for j in range(4):
+            norm_buf.extend([part_data[14][i][0][j],
+                             part_data[14][i][1][j],
+                             part_data[14][i][2][j]])
+
+    for i in range(part_data[3]):
+        tex_buf.extend(part_data[15][i])
+
+    for i in part_data[16]:
+        ind_buf.extend([part_data[17][i[0]][0] * 4 + part_data[17][i[0]][1],
+                        part_data[17][i[0]][2] * 4 + part_data[17][i[0]][3],
+                        part_data[17][i[0]][4],
+                        part_data[17][i[1]][0] * 4 + part_data[17][i[1]][1],
+                        part_data[17][i[1]][2] * 4 + part_data[17][i[1]][3],
+                        part_data[17][i[1]][4],
+                        part_data[17][i[2]][0] * 4 + part_data[17][i[2]][1],
+                        part_data[17][i[2]][2] * 4 + part_data[17][i[2]][3],
+                        part_data[17][i[2]][4]])
+
+    return vert_buf, norm_buf, tex_buf, ind_buf
+
+def convert_model(name):
+    model_name = name.split("\\")[-1].split("/")[-1]
+    model_folder = name[:-len(model_name)]
+
+    # common information
+    contrib = dae.asset.Contributor(authoring_tool="EIrepack",
+                                    copyright="Only for educational purposes")
+    asset = dae.asset.Asset(upaxis=dae.asset.UP_AXIS.Z_UP, title=model_name,
+                            contributors=[contrib], unitname="meter",
+                            unitmeter=1)
+
+    # create empty collada mesh
+    mesh = dae.Collada()
+    mesh.assetInfo = asset
+
+    model_tree = lnk.read_info(name + ".lnk")
+    parts_list = flat_tree(model_tree)
+
+    # create texture material
+    image = dae.material.CImage("texture", "./" + \
+                                textures.get(model_name, "default") + ".png")
+    surface = dae.material.Surface("texture_surface", image)
+    sampler2d = dae.material.Sampler2D("texture_sampler", surface)
+    texmap = dae.material.Map(sampler2d, "UVSET0")
+
+    effect = dae.material.Effect("effect0", [surface, sampler2d], "phong",
+                                 diffuse=texmap)
+    mat = dae.material.Material("material0", "material", effect)
+
+    # add material in mesh
+    mesh.effects.append(effect)
+    mesh.materials.append(mat)
+    mesh.images.append(image)
+
+    # generate geometries
+    nodes = []
+    for part_name in parts_list:
+        # read model data
+        part_pos = bon.read_info(model_folder + part_name + ".bon")
+        part_data = fig.read_info(model_folder + part_name + ".fig")
+
+        # prepare geometry
+        vert, norm, tex, ind = create_geometry(part_data)
+        vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
+                                             ("X", "Y", "Z"))
+        norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
+                                             ("X", "Y", "Z"))
+        tex_source = dae.source.FloatSource("tex_arr", np.array(tex),
+                                            ("S", "T"))
+        ind_source = np.array(ind)
+
+        # create empty mesh
+        geom = dae.geometry.Geometry(mesh, part_name + "_geom",
+                                     part_name + "_geom",
+                                     [vert_source, norm_source, tex_source])
+
+        # describe mesh data structure
+        input_list = dae.source.InputList()
+        input_list.addInput(0, "VERTEX", "#vert_arr")
+        input_list.addInput(1, "NORMAL", "#norm_arr")
+        input_list.addInput(2, "TEXCOORD", "#tex_arr")
+
+        # generate geometry data
+        triset = geom.createTriangleSet(ind_source, input_list, "material0")
+        geom.primitives.append(triset)
+        mesh.geometries.append(geom)
+
+        # mesh position
+        pos = dae.scene.TranslateTransform(part_pos[0][0],
+                                           part_pos[0][1],
+                                           part_pos[0][2])
+        # reinstance material
+        matnode = dae.scene.MaterialNode("material0", mat, inputs=[])
+        # add geometry to wrap node
+        geomnodes = [dae.scene.GeometryNode(geom, [matnode])]
+
+        nodes.append(dae.scene.Node(part_name,
+                                    children=geomnodes,
+                                    transforms=[pos]))
+
+    # generate scene hierarchy
+    #nodes = []
+
+    # add base light
+    sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
+    mesh.lights.append(sun)
+    root_node = dae.scene.Node("root", children=nodes)
+    sun_node = dae.scene.Node("sunshine", children=[dae.scene.LightNode(sun)],
+                              transforms=[dae.scene.MatrixTransform(np.array(
+                                    [1, 0, 0, 0,
+                                     0, 1, 0, 0,
+                                     0, 0, 1, 0,
+                                     0, 0, 0, 1]))])
+    # create main scene
+    myscene = dae.scene.Scene(model_name, [sun_node, root_node])
+    mesh.scenes.append(myscene)
+    mesh.scene = myscene
+
+    # finalyze and save mesh
+    mesh.write(name + ".dae")
 
 if __name__ == '__main__':
     if 2 == len(sys.argv):
