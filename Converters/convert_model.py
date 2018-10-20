@@ -501,6 +501,16 @@ def create_geometry(part_data):
 
     return vert_buf, norm_buf, tex_buf, ind_buf
 
+def build_scene_hierarchy(tree, nodes_prepare):
+    buf = []
+
+    for name in tree[1]:
+        buf.append(build_scene_hierarchy(name, nodes_prepare))
+
+    buf.append(nodes_prepare[tree[0]][0])
+
+    return dae.scene.Node(tree[0], children=buf, transforms=[nodes_prepare[tree[0]][1]])
+
 def convert_model(name):
     model_name = name.split("\\")[-1].split("/")[-1]
     model_folder = name[:-len(model_name)]
@@ -536,7 +546,7 @@ def convert_model(name):
     mesh.images.append(image)
 
     # generate geometries
-    nodes = []
+    nodes_prepare = {}
     for part_name in parts_list:
         # read model data
         part_pos = bon.read_info(model_folder + part_name + ".bon")
@@ -575,19 +585,16 @@ def convert_model(name):
         # reinstance material
         matnode = dae.scene.MaterialNode("material0", mat, inputs=[])
         # add geometry to wrap node
-        geomnodes = [dae.scene.GeometryNode(geom, [matnode])]
+        geomnode = dae.scene.GeometryNode(geom, [matnode])
 
-        nodes.append(dae.scene.Node(part_name,
-                                    children=geomnodes,
-                                    transforms=[pos]))
+        nodes_prepare.update({part_name: [geomnode, pos]})
 
     # generate scene hierarchy
-    #nodes = []
-
+    root_node = dae.scene.Node(model_name, children=[build_scene_hierarchy(model_tree,
+                                                                           nodes_prepare)])
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
     mesh.lights.append(sun)
-    root_node = dae.scene.Node("root", children=nodes)
     sun_node = dae.scene.Node("sunshine", children=[dae.scene.LightNode(sun)],
                               transforms=[dae.scene.MatrixTransform(np.array(
                                     [1, 0, 0, 0,
