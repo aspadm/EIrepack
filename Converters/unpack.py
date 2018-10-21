@@ -3,7 +3,7 @@ import os
 import os.path
 import shutil
 import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
-       convert_map, compact
+       convert_map, compact, convert_model, textures_link
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -112,6 +112,7 @@ folder anymore".format(count))
         print("\nConvert files\n")
 
     maps = []
+    figs = []
     count = 0
     for d, dirs, files in os.walk(args.dst_dir):
         for file in files:
@@ -135,10 +136,12 @@ folder anymore".format(count))
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
                             f.write(anm.build_yaml(info))
                 elif file_e == "bon":
-                    info = bon.read_info(os.path.join(d, file))
-                    if info != None:
-                        with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(bon.build_yaml(info))
+                    continue
+                    # model convertion later
+##                    info = bon.read_info(os.path.join(d, file))
+##                    if info != None:
+##                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+##                            f.write(bon.build_yaml(info))
                 elif file_e == "cam":
                     info = cam.read_info(os.path.join(d, file))
                     if info != None:
@@ -149,15 +152,20 @@ folder anymore".format(count))
                     with open(os.path.join(d, file) + ".csv", "w") as f:
                         f.write(db.build_data(data))
                 elif file_e == "fig":
-                    info = fig.read_info(os.path.join(d, file))
-                    if info != None:
-                        with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(fig.build_yaml(info))
+                    continue
+                    # model convertion later
+##                    info = fig.read_info(os.path.join(d, file))
+##                    if info != None:
+##                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+##                            f.write(fig.build_yaml(info))
                 elif file_e == "lnk":
-                    info = lnk.read_info(os.path.join(d, file))
-                    if info != None:
-                        with open(os.path.join(d, file) + ".yaml", "w") as f:
-                            f.write(lnk.build_yaml(info))
+                    figs.append([d, file_n])
+                    continue
+                    # model convertion later
+##                    info = lnk.read_info(os.path.join(d, file))
+##                    if info != None:
+##                        with open(os.path.join(d, file) + ".yaml", "w") as f:
+##                            f.write(lnk.build_yaml(info))
                 elif file_e == "mmp":
                     image = mmp.read_image(os.path.join(d, file))
                     image.save(os.path.join(d, file_n) + ".png")
@@ -198,6 +206,37 @@ folder anymore".format(count))
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
                             f.write(mob.build_yaml(info))
                 os.remove(os.path.join(d, file))
+
+    if args.verbose:
+        print("{} files converted".format(count))
+        print("\nConvert models\n")
+
+    # Конвертация моделей
+    # Включает LNK, SEC, ANM, BON файлы
+    count = 0
+    for i in figs:
+        print(i[0])
+        try:
+            if convert_model.convert_model(os.path.join(i[0], i[1])) is not None:
+                continue
+        except Exception as e:
+            print(e)
+            continue
+        # Копируем текстуры
+        for j in textures_link.textures.get(i[1], []):
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
+                                         j + ".png"),
+                            os.path.join(i[0], j + ".png"))
+
+        filelist = convert_model.flat_tree(lnk.read_info(
+            os.path.join(i[0], i[1] + ".lnk")))
+        count += 1 + len(filelist) * 2
+
+        # Удаляем исходные файлы
+        for j in filelist:
+            os.remove(os.path.join(i[0], j + ".fig"))
+            os.remove(os.path.join(i[0], j + ".bon"))
+        os.remove(os.path.join(i[0], i[1] + ".lnk"))
 
     if args.verbose:
         print("{} files converted".format(count))
