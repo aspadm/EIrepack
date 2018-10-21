@@ -280,10 +280,16 @@ def read_node(info, file):
             file.read(node_len - 8)
             print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
         else:
-            file.read(4096)
-            info.append([node_name, "NOT_IMPLEMENTED"])
+            #file.read(4096)
+            info.append([node_name, tuple(read_int(file, 1024))])
     elif node_type == "StringEncrypted":
         info.append([node_name, decrypt_str(file, node_len - 12)])
+    elif node_type == "LeverStats":
+        if node_len != 20:
+            file.read(node_len - 8)
+            print("UNEXPECTED LEN", node_len, "AT", node_name, "AT", file.tell())
+        else:
+            info.append([node_name, tuple(read_int(file, 3))])
     else:
         print(node_type, "at", file.tell())
         info.append([node_name, "NOT_NOW"])
