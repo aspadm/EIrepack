@@ -1,3 +1,4 @@
+import sys
 import argparse
 import os
 import os.path
@@ -13,26 +14,7 @@ archives = ["mq", "mpr", "res", "bon", "mod", "anm"]
 convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", "mob",
            "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb", "ldb"]
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="EIrepack v.0.9a \
-(Evil Islands resources unpacker and converter)",
-                                     add_help=True)
-    parser.add_argument("src_dir", type=str,
-                    help="game folder")
-    parser.add_argument("dst_dir", type=str,
-                    help="output folder")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                    help="increase output verbosity")
-    parser.add_argument("-s", "--skip_extract", action="store_true",
-                    help="skip archive extraction")
-    parser.add_argument("-c", "--skip_copy", action="store_true",
-                    help="skip file copy")
-    parser.add_argument("-t", "--text_joint", action="store_true",
-                    help="joint game strings")
-
-    args = parser.parse_args()
-
+def unpack(args):
     if args.verbose:
         print("Source dir: " + args.src_dir)
         print("Destination dir: " + args.dst_dir)
@@ -302,3 +284,38 @@ folder anymore".format(count))
             
         if args.verbose:
             print("{} files converted".format(count))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="EIrepack v.1.0 \
+(Evil Islands resources unpacker and converter)",
+                                     add_help=True)
+    parser.add_argument("src_dir", type=str,
+                    help="game folder")
+    parser.add_argument("dst_dir", type=str,
+                    help="output folder")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                    help="increase output verbosity")
+    parser.add_argument("-s", "--skip_extract", action="store_true",
+                    help="skip archive extraction")
+    parser.add_argument("-c", "--skip_copy", action="store_true",
+                    help="skip file copy")
+    parser.add_argument("-t", "--text_joint", action="store_true",
+                    help="joint game strings")
+
+    #args = parser.parse_args()
+    if len(sys.argv) > 1:
+        print("Starting console version. \
+For GUI start program without arguments.\n")
+
+        args = parser.parse_args()
+        unpack(args)
+    else:
+        print("Starting GUI version. \
+For console version use some arguments (like --help).\n")
+        
+        from PyQt5 import QtWidgets, uic
+        app = QtWidgets.QApplication(sys.argv)
+        w = uic.loadUi('GUI.ui')
+        w.show()
+        sys.exit(app.exec_())
+    
