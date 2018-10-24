@@ -87,6 +87,9 @@
      </item>
      <item>
       <widget class="QCheckBox" name="need_converting">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Конвертировать ресурсы</string>
        </property>
@@ -120,11 +123,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QTextBrowser" name="textBrowser">
-       <property name="acceptRichText">
-        <bool>false</bool>
+      <widget class="QTextEdit" name="log_window">
+       <property name="readOnly">
+        <bool>true</bool>
        </property>
-       <property name="openLinks">
+       <property name="acceptRichText">
         <bool>false</bool>
        </property>
       </widget>

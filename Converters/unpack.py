@@ -6,6 +6,11 @@ import shutil
 import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
        convert_map, compact, convert_model, textures_link
 
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QMetaType
+##from QMetaType import qRegisterMetaType
+
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
 simple_copy = ["mp3", "rtf", "dat", "grp", "bik", "ini", "txt", "wav",
@@ -16,9 +21,9 @@ convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", "mob",
 
 def unpack(args):
     if args.verbose:
-        print("Source dir: " + args.src_dir)
-        print("Destination dir: " + args.dst_dir)
-        print("\nCreate working copy\n")
+        print_log("Source dir: " + args.src_dir)
+        print_log("Destination dir: " + args.dst_dir)
+        print_log("\nCreate working copy\n")
 
     count = 0
     if not args.skip_copy:
@@ -30,19 +35,19 @@ def unpack(args):
                                         os.path.relpath(d, args.src_dir))
                     if not os.path.exists(dest):
                         if args.verbose:
-                            print("Create folder \"" + dest + "\"")
+                            print_log("Create folder \"" + dest + "\"")
                         os.makedirs(dest)
                     shutil.copyfile(os.path.join(d, file),
                                     os.path.join(dest, file))
                     count += 1
                 elif args.verbose:
-                    print("Skip \"" + file + "\"")
+                    print_log("Skip \"" + file + "\"")
 
     # Распаковка архивов, пока есть, что распаковывать
     if args.verbose:
-        print("{} files copied; no need to read source \
+        print_log("{} files copied; no need to read source \
 folder anymore".format(count))
-        print("\nUnpack archives recursively")
+        print_log("\nUnpack archives recursively")
 
     count = 0
     flag = 0 if args.skip_extract else 1
@@ -50,7 +55,7 @@ folder anymore".format(count))
         count += 1
         flag = 0
         if args.verbose:
-            print("\n{} iteration of file unpacking".format(count))
+            print_log("\n{} iteration of file unpacking".format(count))
 
         arr = []
         for d, dirs, files in os.walk(args.dst_dir):
@@ -59,7 +64,7 @@ folder anymore".format(count))
                     with open(os.path.join(d, file), "rb") as f_tst:
                         magic = f_tst.read(4)
                     if magic == b'\x3C\xE2\x9C\x01':
-                        print(os.path.join(d, file))
+                        print_log(os.path.join(d, file))
                         flag = 1
                         if file[-3:] == "mod":
                             mod.read_info(os.path.join(d, file))
@@ -83,15 +88,15 @@ folder anymore".format(count))
 
     
     if args.verbose:
-        print("\nAfter {} iterations all archives unpacked".format(count))
-        print("\nStart figures folder reorganisation\n")
+        print_log("\nAfter {} iterations all archives unpacked".format(count))
+        print_log("\nStart figures folder reorganisation\n")
 
     compact.compact_figs(os.path.join(args.dst_dir, "Res", "figures"))
 
     # Конвертация файлов
     if args.verbose:
-        print("\nFigures folder reorganised\n")
-        print("\nConvert files\n")
+        print_log("\nFigures folder reorganised\n")
+        print_log("\nConvert files\n")
 
     maps = []
     figs = []
@@ -102,12 +107,12 @@ folder anymore".format(count))
             if file_e in convert:
                 count += 1
                 file_n = os.path.splitext(file)[0]
-                print(os.path.join(d, file))
+                print_log(os.path.join(d, file))
                 if file_e == "adb":
                     try:
                         info = adb.read_info(os.path.join(d, file))
                     except:
-                        print("ADB ERROR in file \"{}\"".format(file))
+                        print_log("ADB ERROR in file \"{}\"".format(file))
                         info = None
                     if info != None:
                         with open(os.path.join(d, file) + ".yaml", "w") as f:
@@ -190,19 +195,19 @@ folder anymore".format(count))
                 os.remove(os.path.join(d, file))
 
     if args.verbose:
-        print("{} files converted".format(count))
-        print("\nConvert models\n")
+        print_log("{} files converted".format(count))
+        print_log("\nConvert models\n")
 
     # Конвертация моделей
     # Включает LNK, SEC, ANM, BON файлы
     count = 0
     for i in figs:
-        print(i[0])
+        print_log(i[0])
         try:
             if convert_model.convert_model(os.path.join(i[0], i[1])) is not None:
                 continue
         except Exception as e:
-            print(e)
+            print_log(e)
             continue
         # Копируем текстуры
         for j in textures_link.textures.get(i[1], []):
@@ -221,8 +226,8 @@ folder anymore".format(count))
         os.remove(os.path.join(i[0], i[1] + ".lnk"))
 
     if args.verbose:
-        print("{} files converted".format(count))
-        print("\nConvert game maps\n")
+        print_log("{} files converted".format(count))
+        print_log("\nConvert game maps\n")
 
     # Конвертация карт
     # Для этого используются MP, SEC файлы карты и дополнительные текстуры
@@ -230,7 +235,7 @@ folder anymore".format(count))
     for i in maps:
         map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
         if args.verbose:
-            print(os.path.join(i[0], i[1]),
+            print_log(os.path.join(i[0], i[1]),
                   "  + {} textures and {}x{} sectors".format(map_info[3],
                                                              map_info[1],
                                                              map_info[2]))
@@ -251,7 +256,7 @@ folder anymore".format(count))
         os.remove(os.path.join(i[0], i[1] + ".mp"))
 
     if args.verbose:
-        print("{} files converted ({} maps)".format(count, len(maps)))
+        print_log("{} files converted ({} maps)".format(count, len(maps)))
 
     # Конвертация текстов игры
     # Примечание: в оригинальной игре есть кривой файл -
@@ -259,7 +264,7 @@ folder anymore".format(count))
     count = 0
     if args.text_joint:
         if args.verbose:
-            print("\nJoint game strings\n")
+            print_log("\nJoint game strings\n")
             
         with open(os.path.join(args.dst_dir,
                                "Res", "texts", "texts.yaml"), "w") as file:
@@ -283,7 +288,53 @@ folder anymore".format(count))
             count += 1
             
         if args.verbose:
-            print("{} files converted".format(count))
+            print_log("{} files converted".format(count))
+
+def print_c(string):
+    w.log_window.append(string + "\n")
+
+class Thread(QThread):
+    args = None
+    
+    def __init__(self, parent=None):
+        QThread.__init__(self, parent=parent)
+        self.isRunning = True
+
+    def run(self):
+        print(self.args)
+        unpack(self.args)
+
+    def stop(self):
+        self.isRunning = False
+        self.quit()
+        self.wait()
+
+def start_unpack():
+    argarr = [w.src_folder.text()]
+    
+    if not w.in_place.isChecked():
+        argarr.append(w.dst_folder.text())
+        if not w.need_copy.isChecked():
+            argarr.append("--skip_copy")
+    else:
+        argarr.append(w.src_folder.text())
+        argarr.append("--skip_copy")
+    
+    if not w.need_extracting.isChecked():
+        argarr.append("--skip_extract")
+    if w.need_verbose.isChecked():
+        argarr.append("--verbose")
+    if w.need_text_merging.isChecked():
+        argarr.append("--text_joint")
+
+    print(argarr)
+    unpack_thread.args = parser.parse_args(argarr)
+    unpack_thread.start()
+
+def lock_dst():
+    w.dst_folder.setEnabled(not w.in_place.isChecked())
+    w.dst_folder_choser.setEnabled(not w.in_place.isChecked())
+    w.need_copy.setEnabled(not w.in_place.isChecked())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EIrepack v.1.0 \
@@ -302,20 +353,26 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--text_joint", action="store_true",
                     help="joint game strings")
 
-    #args = parser.parse_args()
     if len(sys.argv) > 1:
-        print("Starting console version. \
+        print_log = print
+        print_log("Starting console version. \
 For GUI start program without arguments.\n")
 
         args = parser.parse_args()
         unpack(args)
     else:
-        print("Starting GUI version. \
-For console version use some arguments (like --help).\n")
-        
-        from PyQt5 import QtWidgets, uic
         app = QtWidgets.QApplication(sys.argv)
         w = uic.loadUi('GUI.ui')
+
+        unpack_thread = Thread()
+        
+        print_log = print_c
+        print_log("Starting GUI version. \
+For console version use some arguments (like --help).\n")
+
+        w.start.clicked.connect(start_unpack)
+        w.in_place.clicked.connect(lock_dst)
+        
         w.show()
         sys.exit(app.exec_())
     
