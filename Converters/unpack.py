@@ -8,7 +8,9 @@ import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QThread, pyqtSignal
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
+import time
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -19,6 +21,7 @@ convert = ["cam", "reg", "adb", "bon", "anm", "bon", "db", "idb", "mob",
            "fig", "lnk", "mmp", "mp", "pdb", "qdb", "sec", "sdb", "udb", "ldb"]
 
 def unpack(args):
+    update_progress("STARTED_AT_" + time.strftime("%H:%M:%S"))
     if args.verbose:
         print_log("Source dir: " + args.src_dir)
         print_log("Destination dir: " + args.dst_dir)
@@ -43,7 +46,7 @@ def unpack(args):
                 elif args.verbose:
                     print_log("Skip \"" + file + "\"")
 
-    update_progress("FOLDERS_CONVERTED")
+    update_progress("FOLDERS_CONVERTED_" + time.strftime("%H:%M:%S"))
     # Распаковка архивов, пока есть, что распаковывать
     if args.verbose:
         print_log("{} files copied; no need to read source \
@@ -88,7 +91,7 @@ folder anymore".format(count))
                                 res.unpack_res(f, filetree, os.path.join(d, file))
                         os.remove(os.path.join(d, file))
 
-    update_progress("ARCHIVES_CONVERTED")
+    update_progress("ARCHIVES_CONVERTED_" + time.strftime("%H:%M:%S"))
     if args.verbose:
         print_log("\nAfter {} iterations all archives unpacked".format(count))
         print_log("\nStart figures folder reorganisation\n")
@@ -183,7 +186,7 @@ folder anymore".format(count))
                                 f.write(mob.build_yaml(info))
                     os.remove(os.path.join(d, file))
 
-        update_progress("COMMON_CONVERTED")
+        update_progress("COMMON_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted".format(count))
             print_log("\nConvert models\n")
@@ -220,7 +223,7 @@ folder anymore".format(count))
                 os.remove(os.path.join(i[0], j + ".bon"))
             os.remove(os.path.join(i[0], i[1] + ".lnk"))
 
-        update_progress("FIGURES_CONVERTED")
+        update_progress("FIGURES_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted".format(count))
             print_log("\nConvert game maps\n")
@@ -252,7 +255,7 @@ folder anymore".format(count))
                 os.remove(os.path.join(i[0], i[1] + "{:03}.png".format(j)))
             os.remove(os.path.join(i[0], i[1] + ".mp"))
 
-        update_progress("MAPS_CONVERTED")
+        update_progress("MAPS_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted ({} maps)".format(count, len(maps)))
 
@@ -288,7 +291,7 @@ folder anymore".format(count))
             count += 1
             update_progress()
 
-        update_progress("TEXTS_CONVERTED")
+        update_progress("TEXTS_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted".format(count))
 
@@ -297,6 +300,7 @@ class Thread(QThread):
     args = None
     print_call = pyqtSignal(str)
     progress_call = pyqtSignal(int)
+    complete_call = pyqtSignal()
     progress = 0
     
     def __init__(self, parent=None):
@@ -309,6 +313,7 @@ class Thread(QThread):
         unpack(self.args)
         w.start.setEnabled(True)
         print_log("\nEnd of convertion\n")
+        self.complete_call.emit()
 
     def stop(self):
         self.isRunning = False
@@ -326,6 +331,7 @@ class Thread(QThread):
             self.progress_call.emit(self.progress)
 
 def start_unpack():
+    max_progress = 50033
     w.start.setEnabled(False)
     argarr = [w.src_folder.text()]
     
@@ -333,19 +339,25 @@ def start_unpack():
         argarr.append(w.dst_folder.text())
         if not w.need_copy.isChecked():
             argarr.append("--skip_copy")
+            max_progress -= 287
     else:
         argarr.append(w.src_folder.text())
         argarr.append("--skip_copy")
+        max_progress -= 287
     
     if not w.need_extracting.isChecked():
         argarr.append("--skip_extract")
+        max_progress -= 2009
     if not w.need_converting.isChecked():
         argarr.append("--skip_convert")
+        max_progress -= 47737
     if w.need_verbose.isChecked():
         argarr.append("--verbose")
     if w.need_text_merging.isChecked():
         argarr.append("--text_joint")
+        max_progress += 3561
 
+    w.progress.setMaximum(max_progress)
     unpack_thread.args = parser.parse_args(argarr)
     unpack_thread.start()
 
@@ -368,6 +380,10 @@ def choose_dst():
 
 def phldr(val=1):
     pass
+
+def complete():
+    QMessageBox.information(w, "Конвертация завершена",
+                                "Все операции выполнены!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EIrepack v1.0 \
@@ -408,6 +424,7 @@ For GUI start program without arguments.\n")
 
         unpack_thread.print_call.connect(w.log_window.append)
         unpack_thread.progress_call.connect(w.progress.setValue)
+        unpack_thread.complete_call.connect(complete)
         
         print_log("Starting GUI version. \
 For console version use some arguments (like --help).\n")
