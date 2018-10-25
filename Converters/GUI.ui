@@ -130,7 +130,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QProgressBar" name="progress_step">
+      <widget class="QProgressBar" name="progress">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -150,20 +150,7 @@
         <enum>QProgressBar::TopToBottom</enum>
        </property>
        <property name="format">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QProgressBar" name="progress_all">
-       <property name="value">
-        <number>0</number>
-       </property>
-       <property name="textVisible">
-        <bool>false</bool>
-       </property>
-       <property name="format">
-        <string/>
+        <string>%p% (%v из %m)</string>
        </property>
       </widget>
      </item>

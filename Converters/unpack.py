@@ -7,7 +7,8 @@ import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,
        convert_map, compact, convert_model, textures_link
 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QFileDialog
 
 funcs = []
 not_copy = ["asi", "dll", "exe", "sav"]
@@ -38,9 +39,11 @@ def unpack(args):
                     shutil.copyfile(os.path.join(d, file),
                                     os.path.join(dest, file))
                     count += 1
+                    update_progress()
                 elif args.verbose:
                     print_log("Skip \"" + file + "\"")
 
+    update_progress("FOLDERS_CONVERTED")
     # Распаковка архивов, пока есть, что распаковывать
     if args.verbose:
         print_log("{} files copied; no need to read source \
@@ -63,6 +66,7 @@ folder anymore".format(count))
                         magic = f_tst.read(4)
                     if magic == b'\x3C\xE2\x9C\x01':
                         print_log(os.path.join(d, file))
+                        update_progress()
                         flag = 1
                         if file[-3:] == "mod":
                             mod.read_info(os.path.join(d, file))
@@ -84,7 +88,7 @@ folder anymore".format(count))
                                 res.unpack_res(f, filetree, os.path.join(d, file))
                         os.remove(os.path.join(d, file))
 
-    
+    update_progress("ARCHIVES_CONVERTED")
     if args.verbose:
         print_log("\nAfter {} iterations all archives unpacked".format(count))
         print_log("\nStart figures folder reorganisation\n")
@@ -110,6 +114,7 @@ folder anymore".format(count))
                 file_e = os.path.splitext(file)[1][1:].lower()
                 if file_e in convert:
                     count += 1
+                    update_progress()
                     file_n = os.path.splitext(file)[0]
                     print_log(os.path.join(d, file))
                     if file_e == "adb":
@@ -178,6 +183,7 @@ folder anymore".format(count))
                                 f.write(mob.build_yaml(info))
                     os.remove(os.path.join(d, file))
 
+        update_progress("COMMON_CONVERTED")
         if args.verbose:
             print_log("{} files converted".format(count))
             print_log("\nConvert models\n")
@@ -191,17 +197,22 @@ folder anymore".format(count))
                 if convert_model.convert_model(os.path.join(i[0], i[1])) is not None:
                     continue
             except Exception as e:
-                print_log(e)
+                print_log(str(e))
                 continue
             # Копируем текстуры
             for j in textures_link.textures.get(i[1], []):
-                shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
-                                             j + ".png"),
-                                os.path.join(i[0], j + ".png"))
+                try:
+                    shutil.copyfile(os.path.join(args.dst_dir, "Res",
+                                                 "textures",
+                                                 j + ".png"),
+                                    os.path.join(i[0], j + ".png"))
+                except Exception as e:
+                    print_log(str(e))
 
             filelist = convert_model.flat_tree(lnk.read_info(
                 os.path.join(i[0], i[1] + ".lnk")))
             count += 1 + len(filelist) * 2
+            update_progress(1 + len(filelist) * 2)
 
             # Удаляем исходные файлы
             for j in filelist:
@@ -209,6 +220,7 @@ folder anymore".format(count))
                 os.remove(os.path.join(i[0], j + ".bon"))
             os.remove(os.path.join(i[0], i[1] + ".lnk"))
 
+        update_progress("FIGURES_CONVERTED")
         if args.verbose:
             print_log("{} files converted".format(count))
             print_log("\nConvert game maps\n")
@@ -224,6 +236,7 @@ folder anymore".format(count))
                                                                  map_info[1],
                                                                  map_info[2]))
             count += map_info[3] + map_info[1] * map_info[2] + 1
+            update_progress(map_info[3] + map_info[1] * map_info[2] + 1)
             for j in range(map_info[3]):
                 shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
                                              i[1] + "{:03}.png".format(j)),
@@ -239,6 +252,7 @@ folder anymore".format(count))
                 os.remove(os.path.join(i[0], i[1] + "{:03}.png".format(j)))
             os.remove(os.path.join(i[0], i[1] + ".mp"))
 
+        update_progress("MAPS_CONVERTED")
         if args.verbose:
             print_log("{} files converted ({} maps)".format(count, len(maps)))
 
@@ -246,7 +260,8 @@ folder anymore".format(count))
     # Примечание: в оригинальной игре есть кривой файл -
     # "Gipat Medium (тип материала - кожа), мы его пропускаем
     count = 0
-    if args.text_joint:
+    if args.text_joint and os.path.isdir(os.path.join(args.dst_dir,
+                               "Res", "texts")):
         if args.verbose:
             print_log("\nJoint game strings\n")
             
@@ -259,6 +274,7 @@ folder anymore".format(count))
                 continue
             os.remove(os.path.join(args.dst_dir, "Res", "texts", file))
             count += 1
+            update_progress()
             
         with open(os.path.join(args.dst_dir, "Res",
                                "textslmp", "textslmp.yaml"), "w") as file:
@@ -270,22 +286,26 @@ folder anymore".format(count))
                 continue
             os.remove(os.path.join(args.dst_dir, "Res/textslmp", file))
             count += 1
-            
+            update_progress()
+
+        update_progress("TEXTS_CONVERTED")
         if args.verbose:
             print_log("{} files converted".format(count))
 
-def print_c(string):
-    w.log_window.append(string + "\n")
 
 class Thread(QThread):
     args = None
+    print_call = pyqtSignal(str)
+    progress_call = pyqtSignal(int)
+    progress = 0
     
     def __init__(self, parent=None):
         QThread.__init__(self, parent=parent)
         self.isRunning = True
 
     def run(self):
-        print(self.args)
+        self.progress = 0
+        self.add_progress(0)
         unpack(self.args)
         w.start.setEnabled(True)
         print_log("\nEnd of convertion\n")
@@ -294,6 +314,16 @@ class Thread(QThread):
         self.isRunning = False
         self.quit()
         self.wait()
+
+    def print_c(self, string):
+        self.print_call.emit(string)
+
+    def add_progress(self, value=1):
+        if type(value) == str:
+            print(value, self.progress)
+        else:
+            self.progress += value
+            self.progress_call.emit(self.progress)
 
 def start_unpack():
     w.start.setEnabled(False)
@@ -316,7 +346,6 @@ def start_unpack():
     if w.need_text_merging.isChecked():
         argarr.append("--text_joint")
 
-    print(argarr)
     unpack_thread.args = parser.parse_args(argarr)
     unpack_thread.start()
 
@@ -324,6 +353,21 @@ def lock_dst():
     w.dst_folder.setEnabled(not w.in_place.isChecked())
     w.dst_folder_choser.setEnabled(not w.in_place.isChecked())
     w.need_copy.setEnabled(not w.in_place.isChecked())
+
+def choose_src():
+    src_folder_new = QFileDialog.getExistingDirectory(
+        caption="Выберите директорию игры (содержит файл game.exe)")
+    if src_folder_new != "":
+        w.src_folder.setText(src_folder_new)
+
+def choose_dst():
+    dst_folder_new = QFileDialog.getExistingDirectory(
+        caption="Выберите папку для экспортированных файлов")
+    if dst_folder_new != "":
+        w.dst_folder.setText(dst_folder_new)
+
+def phldr(val=1):
+    pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="EIrepack v1.0 \
@@ -349,20 +393,29 @@ if __name__ == "__main__":
         print_log("Starting console version. \
 For GUI start program without arguments.\n")
 
+        update_progress = phldr
+
         args = parser.parse_args()
         unpack(args)
     else:
         app = QtWidgets.QApplication(sys.argv)
-        w = uic.loadUi('GUI.ui')
+        w = uic.loadUi("GUI.ui")
 
         unpack_thread = Thread()
         
-        print_log = print_c
+        print_log = unpack_thread.print_c
+        update_progress = unpack_thread.add_progress
+
+        unpack_thread.print_call.connect(w.log_window.append)
+        unpack_thread.progress_call.connect(w.progress.setValue)
+        
         print_log("Starting GUI version. \
 For console version use some arguments (like --help).\n")
 
         w.start.clicked.connect(start_unpack)
         w.in_place.clicked.connect(lock_dst)
+        w.src_folder_choser.clicked.connect(choose_src)
+        w.dst_folder_choser.clicked.connect(choose_dst)
         
         w.show()
         sys.exit(app.exec_())
