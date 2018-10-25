@@ -87,9 +87,6 @@
      </item>
      <item>
       <widget class="QCheckBox" name="need_converting">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
        <property name="text">
         <string>Конвертировать ресурсы</string>
        </property>
