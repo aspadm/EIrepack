@@ -6,9 +6,11 @@ import shutil
 import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
        convert_map, compact, convert_model, textures_link
 
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets#, uic
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
+from GUI import Ui_Form
 
 import time
 
@@ -382,7 +384,7 @@ def phldr(val=1):
     pass
 
 def complete():
-    QMessageBox.information(w, "Конвертация завершена",
+    QMessageBox.information(window, "Конвертация завершена",
                                 "Все операции выполнены!")
 
 if __name__ == "__main__":
@@ -415,7 +417,11 @@ For GUI start program without arguments.\n")
         unpack(args)
     else:
         app = QtWidgets.QApplication(sys.argv)
-        w = uic.loadUi("GUI.ui")
+        #w = uic.loadUi("GUI.ui")
+
+        window = QtWidgets.QWidget()
+        w = Ui_Form()
+        w.setupUi(window)
 
         unpack_thread = Thread()
         
@@ -434,6 +440,6 @@ For console version use some arguments (like --help).\n")
         w.src_folder_choser.clicked.connect(choose_src)
         w.dst_folder_choser.clicked.connect(choose_dst)
         
-        w.show()
+        window.show()
         sys.exit(app.exec_())
     

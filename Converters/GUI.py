@@ -1,0 +1,112 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'GUI.ui'
+#
+# Created by: PyQt5 UI code generator 5.11.3
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_Form(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(335, 412)
+        self.gridLayout = QtWidgets.QGridLayout(Form)
+        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(Form)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.src_folder = QtWidgets.QLineEdit(Form)
+        self.src_folder.setObjectName("src_folder")
+        self.horizontalLayout_2.addWidget(self.src_folder)
+        self.src_folder_choser = QtWidgets.QPushButton(Form)
+        self.src_folder_choser.setObjectName("src_folder_choser")
+        self.horizontalLayout_2.addWidget(self.src_folder_choser)
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.in_place = QtWidgets.QCheckBox(Form)
+        self.in_place.setObjectName("in_place")
+        self.verticalLayout.addWidget(self.in_place)
+        self.label_2 = QtWidgets.QLabel(Form)
+        self.label_2.setObjectName("label_2")
+        self.verticalLayout.addWidget(self.label_2)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.dst_folder = QtWidgets.QLineEdit(Form)
+        self.dst_folder.setObjectName("dst_folder")
+        self.horizontalLayout.addWidget(self.dst_folder)
+        self.dst_folder_choser = QtWidgets.QPushButton(Form)
+        self.dst_folder_choser.setObjectName("dst_folder_choser")
+        self.horizontalLayout.addWidget(self.dst_folder_choser)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.need_copy = QtWidgets.QCheckBox(Form)
+        self.need_copy.setChecked(True)
+        self.need_copy.setObjectName("need_copy")
+        self.verticalLayout.addWidget(self.need_copy)
+        self.need_extracting = QtWidgets.QCheckBox(Form)
+        self.need_extracting.setChecked(True)
+        self.need_extracting.setObjectName("need_extracting")
+        self.verticalLayout.addWidget(self.need_extracting)
+        self.need_converting = QtWidgets.QCheckBox(Form)
+        self.need_converting.setChecked(True)
+        self.need_converting.setObjectName("need_converting")
+        self.verticalLayout.addWidget(self.need_converting)
+        self.need_text_merging = QtWidgets.QCheckBox(Form)
+        self.need_text_merging.setChecked(True)
+        self.need_text_merging.setObjectName("need_text_merging")
+        self.verticalLayout.addWidget(self.need_text_merging)
+        self.need_verbose = QtWidgets.QCheckBox(Form)
+        self.need_verbose.setObjectName("need_verbose")
+        self.verticalLayout.addWidget(self.need_verbose)
+        self.start = QtWidgets.QPushButton(Form)
+        self.start.setObjectName("start")
+        self.verticalLayout.addWidget(self.start)
+        self.log_window = QtWidgets.QTextEdit(Form)
+        self.log_window.setReadOnly(True)
+        self.log_window.setAcceptRichText(False)
+        self.log_window.setObjectName("log_window")
+        self.verticalLayout.addWidget(self.log_window)
+        self.progress = QtWidgets.QProgressBar(Form)
+        self.progress.setEnabled(True)
+        self.progress.setProperty("value", 0)
+        self.progress.setAlignment(QtCore.Qt.AlignCenter)
+        self.progress.setTextVisible(True)
+        self.progress.setOrientation(QtCore.Qt.Horizontal)
+        self.progress.setTextDirection(QtWidgets.QProgressBar.TopToBottom)
+        self.progress.setObjectName("progress")
+        self.verticalLayout.addWidget(self.progress)
+        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "EIrepack v1.0"))
+        self.label.setText(_translate("Form", "Папка с игрой (содержит game.exe):"))
+        self.src_folder_choser.setText(_translate("Form", "Обзор..."))
+        self.in_place.setText(_translate("Form", "Распаковка \"На месте\" (использовать с осторожностью!)"))
+        self.label_2.setText(_translate("Form", "Папка для распаковки (здесь будут результаты работы):"))
+        self.dst_folder_choser.setText(_translate("Form", "Обзор..."))
+        self.need_copy.setText(_translate("Form", "Копировать файлы в рабочую папку"))
+        self.need_extracting.setText(_translate("Form", "Распаковывать архивы"))
+        self.need_converting.setText(_translate("Form", "Конвертировать ресурсы"))
+        self.need_text_merging.setText(_translate("Form", "Объединить игровые тексты"))
+        self.need_verbose.setText(_translate("Form", "Показать подробную историю действий"))
+        self.start.setText(_translate("Form", "Начать распаковку"))
+        self.progress.setFormat(_translate("Form", "%p% (%v из %m)"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())
+
