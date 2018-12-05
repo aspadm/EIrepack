@@ -68,7 +68,7 @@ def trilinear(arr, coefs=[0, 0, 0]):
 
     return buf
 
-def convert_to_obj(name):
+def convert_to_obj(name, coefs=[0, 0, 0]):
     model_name = name.split("\\")[-1].split("/")[-1]
     model_folder = name[:-len(model_name)]
 
@@ -86,8 +86,8 @@ def convert_to_obj(name):
         if part_data is None:
             return
 
-##        vertex_buf = [trilinear([part_data[13][xyz][block][:]]) \
-##                      for i in range(part_data[1])]
+        vertex_buf = [trilinear([part_data[13][xyz][block][:]]) \
+                      for i in range(part_data[1])]
 
                           # v_data   v xyz blk
         vertex_buf = [[part_data[13][i][0][0][:], \
@@ -118,7 +118,7 @@ def convert_to_obj(name):
         with open(model_folder + part_name + ".obj", "w") as file:
             file.write(obj_buf)
 
-def create_geometry(part_data):
+def create_geometry(part_data, coefs=[0, 0, 0]):
     vert_buf = []
     norm_buf = []
     tex_buf = []
@@ -162,7 +162,7 @@ def build_scene_hierarchy(tree, nodes_prepare):
 
     return dae.scene.Node(tree[0], children=buf, transforms=[nodes_prepare[tree[0]][1]])
 
-def convert_model(name):
+def convert_model(name, add_suf="", coefs=[0, 0, 0], root_transform=[]):
     model_name = name.split("\\")[-1].split("/")[-1]
     model_folder = name[:-len(model_name)]
 
@@ -181,15 +181,15 @@ def convert_model(name):
     parts_list = flat_tree(model_tree)
 
     # create texture material
-    image = dae.material.CImage("texture", "./" + \
+    image = dae.material.CImage("texture" + add_suf, "./" + \
                                 textures.get(model_name, ["default"])[0] + ".png")
-    surface = dae.material.Surface("texture_surface", image)
-    sampler2d = dae.material.Sampler2D("texture_sampler", surface)
+    surface = dae.material.Surface("texture_surface" + add_suf, image)
+    sampler2d = dae.material.Sampler2D("texture_sampler" + add_suf, surface)
     texmap = dae.material.Map(sampler2d, "UVSET0")
 
-    effect = dae.material.Effect("effect0", [surface, sampler2d], "phong",
+    effect = dae.material.Effect("effect0" + add_suf, [surface, sampler2d], "phong",
                                  diffuse=texmap)
-    mat = dae.material.Material("material0", "material", effect)
+    mat = dae.material.Material("material0" + add_suf, "material" + add_suf, effect)
 
     # add material in mesh
     mesh.effects.append(effect)
@@ -217,8 +217,8 @@ def convert_model(name):
         ind_source = np.array(ind)
 
         # create empty mesh
-        geom = dae.geometry.Geometry(mesh, part_name + "_geom",
-                                     part_name + "_geom",
+        geom = dae.geometry.Geometry(mesh, part_name + "_geom" + add_suf,
+                                     part_name,
                                      [vert_source, norm_source, tex_source])
 
         # describe mesh data structure
@@ -228,7 +228,8 @@ def convert_model(name):
         input_list.addInput(2, "TEXCOORD", "#tex_arr")
 
         # generate geometry data
-        triset = geom.createTriangleSet(ind_source, input_list, "material0")
+        triset = geom.createTriangleSet(ind_source, input_list,
+                                        "material0" + add_suf)
         geom.primitives.append(triset)
         mesh.geometries.append(geom)
 
@@ -237,15 +238,17 @@ def convert_model(name):
                                            part_pos[0][1],
                                            part_pos[0][2])
         # reinstance material
-        matnode = dae.scene.MaterialNode("material0", mat, inputs=[])
+        matnode = dae.scene.MaterialNode("material0" + add_suf, mat, inputs=[])
         # add geometry to wrap node
         geomnode = dae.scene.GeometryNode(geom, [matnode])
 
         nodes_prepare.update({part_name: [geomnode, pos]})
 
     # generate scene hierarchy
-    root_node = dae.scene.Node(model_name, children=[build_scene_hierarchy(model_tree,
-                                                                           nodes_prepare)])
+    root_node = dae.scene.Node(model_name + add_suf,
+                               children=[build_scene_hierarchy(model_tree,
+                                                               nodes_prepare)],
+                               transforms=root_transform)
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
     mesh.lights.append(sun)
@@ -256,12 +259,12 @@ def convert_model(name):
                                      0, 0, 1, 0,
                                      0, 0, 0, 1]))])
     # create main scene
-    myscene = dae.scene.Scene(model_name, [sun_node, root_node])
+    myscene = dae.scene.Scene(model_name + add_suf, [sun_node, root_node])
     mesh.scenes.append(myscene)
     mesh.scene = myscene
 
     # finalyze and save mesh
-    mesh.write(name + ".dae")
+    mesh.write(name + add_suf + ".dae")
 
 if __name__ == '__main__':
     if 2 == len(sys.argv):
