@@ -162,7 +162,14 @@ def build_scene_hierarchy(tree, nodes_prepare):
 
     return dae.scene.Node(tree[0], children=buf, transforms=[nodes_prepare[tree[0]][1]])
 
-def convert_model(name, add_suf="", coefs=[0, 0, 0], root_transform=[]):
+def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, tex_name=None):
+    if coefs is None:
+        coefs = [0, 0, 0]
+    if root_pos is None:
+        root_pos = [0, 0, 0]
+    if root_rot is None:
+        root_rot = [1, 0, 0, 0]
+    
     model_name = name.split("\\")[-1].split("/")[-1]
     model_folder = name[:-len(model_name)]
 
@@ -181,8 +188,9 @@ def convert_model(name, add_suf="", coefs=[0, 0, 0], root_transform=[]):
     parts_list = flat_tree(model_tree)
 
     # create texture material
-    image = dae.material.CImage("texture" + add_suf, "./" + \
-                                textures.get(model_name, ["default"])[0] + ".png")
+    if tex_name is None:
+        tex_name = textures.get(model_name, ["default"])[0]
+    image = dae.material.CImage("texture" + add_suf, "./" + tex_name + ".png")
     surface = dae.material.Surface("texture_surface" + add_suf, image)
     sampler2d = dae.material.Sampler2D("texture_sampler" + add_suf, surface)
     texmap = dae.material.Map(sampler2d, "UVSET0")
@@ -248,7 +256,7 @@ def convert_model(name, add_suf="", coefs=[0, 0, 0], root_transform=[]):
     root_node = dae.scene.Node(model_name + add_suf,
                                children=[build_scene_hierarchy(model_tree,
                                                                nodes_prepare)],
-                               transforms=root_transform)
+                               transforms=[]) # TODO TRANSFORMATION
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
     mesh.lights.append(sun)

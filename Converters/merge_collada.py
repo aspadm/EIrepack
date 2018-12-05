@@ -33,10 +33,3 @@ def merge_dae_objects(list_dae_objects, scene_name):
     merged_dae_object.scene = myscene       
            
     return merged_dae_object
-
-
-fpath_output = "D:\\pEI\\temp\\merged.dae"
-list_fpath_inputs = []
-list_fpath_inputs.append("D:\\pEI\\temp\\Zone20.dae")
-list_fpath_inputs.append("D:\\pEI\\temp\\unmori\\unmori_LOLWUT.dae")
-merge_dae_files(list_fpath_inputs, fpath_output, "MergedMap")

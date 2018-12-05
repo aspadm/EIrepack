@@ -4,7 +4,7 @@ import os
 import os.path
 import shutil
 import res, mod, bon, adb, anm, cam, db, fig, lnk, mmp, mp, reg, sec, text, mob,\
-       convert_map, compact, convert_model, textures_link
+       convert_map, compact, convert_model, textures_link, merge_collada
 
 from PyQt5 import QtWidgets#, uic
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -111,6 +111,7 @@ folder anymore".format(count))
     if not args.skip_convert:
         if args.verbose:
             print_log("\nConvert files\n")
+        static_objs = {}
         maps = []
         figs = []
         count = 0
@@ -186,13 +187,105 @@ folder anymore".format(count))
                         if info != None:
                             with open(os.path.join(d, file) + ".yaml", "w") as f:
                                 f.write(mob.build_yaml(info))
+                        # Просмотрим файл на статику
+                        buf_objs = []
+                        with open(os.path.join(d, file) + ".yaml") as f:
+                            for line in f.readlines():
+                                if len(line) > 100:
+                                    continue
+                                buf = line.replace("\n", "").replace("\r", "").\
+                                           replace(" ", "").replace("\"", "").split(":")
+
+                                if cnt > 0:
+                                    if buf_objs[-1][var_lbl][-cnt] is None:
+                                        buf_objs[-1][var_lbl][-cnt] = float(buf[0][1:])
+                                        cnt -= 1
+                                    continue
+
+                                if buf[0] == "OBJTEMPLATE":
+                                    count += 1
+                                    buf_objs.append([buf[1], buf[1] + "_" + file_n + "_{}".format(count),
+                                              None, [None, None, None],
+                                              [None, None, None], [None, None, None, None]])
+                                if buf[0] == "OBJPRIMTXTR" and buf_objs[-1][2] is None:
+                                    buf_objs[-1][2] = buf[1]
+                                if buf[0] == "OBJCOMPLECTION":
+                                    var_lbl = 3
+                                    cnt = 3
+                                if buf[0] == "OBJPOSITION":
+                                    var_lbl = 4
+                                    cnt = 3
+                                if buf[0] == "OBJROTATION":
+                                    var_lbl = 5
+                                    cnt = 4
+                        static_objs.update({file_n: buf_objs})
                     os.remove(os.path.join(d, file))
 
         update_progress("COMMON_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted".format(count))
-            print_log("\nConvert models\n")
+            print_log("\nConvert game maps\n")
 
+        # Конвертация карт
+        # Для этого используются MP, SEC файлы карты и дополнительные текстуры
+        count = 0
+        for i in maps:
+            # Параметры карты
+            map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
+            if args.verbose:
+                print_log(os.path.join(i[0], i[1]),
+                      "  + {} textures and {}x{} sectors".format(map_info[3],
+                                                                 map_info[1],
+                                                                 map_info[2]))
+            count += map_info[3] + map_info[1] * map_info[2] + 1
+            update_progress(map_info[3] + map_info[1] * map_info[2] + 1)
+            # Скопируем текстуры
+            for j in range(map_info[3]):
+                shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
+                                             i[1] + "{:03}.png".format(j)),
+                                os.path.join(i[0], i[1] + "{:03}.png".format(j)))
+            # Конвертация карты и текстур
+            convert_map.convert_map(os.path.join(i[0], i[1]))
+
+            # Сконвертируем статику
+            list_fpath_inputs = [os.path.join(args.dst_dir, "Res", "figures",
+                                              s_obj[0], s_obj[0] + s_obj[1] + ".dae") \
+                                 for s_obj in static_objs[i[1]]]
+            # TODO REAL Z COORDINATE
+            for k, s_obj in enumerate(static_objs[i[1]]):
+                convert_model.convert_model(list_fpath_inputs[k], s_obj[1],
+                                            s_obj[3], s_obj[4], s_obj[5],
+                                            s_obj[2])
+            
+            # Создадим карту со статикой
+            merge_collada.merge_dae_files(list_fpath_inputs,
+                                          os.path.join(i[0], i[1] + "_full.dae"),
+                                          i[1] + "_full")
+            
+            # Скопируем текстуры статики
+            for s_obj in static_objs[i[1]]:
+                shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
+                                             s_obj[2] + ".png"),
+                                os.path.join(i[0], s_obj[2] + ".png"))
+
+            # Удалим использованную статику
+            for st_dae in list_fpath_inputs:
+                os.remove(st_dae)
+
+            # Удаляем исходные файлы
+            for j in range(map_info[1]):
+                for k in range(map_info[2]):
+                    os.remove(os.path.join(i[0], i[1] + \
+                                           "{:03}{:03}.sec".format(j, k)))
+            for j in range(map_info[3]):
+                os.remove(os.path.join(i[0], i[1] + "{:03}.png".format(j)))
+            os.remove(os.path.join(i[0], i[1] + ".mp"))
+
+        update_progress("MAPS_CONVERTED_" + time.strftime("%H:%M:%S"))
+        if args.verbose:
+            print_log("{} files converted ({} maps)".format(count, len(maps)))
+            print_log("\nConvert models\n")            
+            
         # Конвертация моделей
         # Включает LNK, SEC, ANM, BON файлы
         count = 0
@@ -224,42 +317,10 @@ folder anymore".format(count))
                 os.remove(os.path.join(i[0], j + ".fig"))
                 os.remove(os.path.join(i[0], j + ".bon"))
             os.remove(os.path.join(i[0], i[1] + ".lnk"))
-
+            
         update_progress("FIGURES_CONVERTED_" + time.strftime("%H:%M:%S"))
         if args.verbose:
             print_log("{} files converted".format(count))
-            print_log("\nConvert game maps\n")
-
-        # Конвертация карт
-        # Для этого используются MP, SEC файлы карты и дополнительные текстуры
-        count = 0
-        for i in maps:
-            map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
-            if args.verbose:
-                print_log(os.path.join(i[0], i[1]),
-                      "  + {} textures and {}x{} sectors".format(map_info[3],
-                                                                 map_info[1],
-                                                                 map_info[2]))
-            count += map_info[3] + map_info[1] * map_info[2] + 1
-            update_progress(map_info[3] + map_info[1] * map_info[2] + 1)
-            for j in range(map_info[3]):
-                shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
-                                             i[1] + "{:03}.png".format(j)),
-                                os.path.join(i[0], i[1] + "{:03}.png".format(j)))
-            convert_map.convert_map(os.path.join(i[0], i[1]))
-
-            # Удаляем исходные файлы
-            for j in range(map_info[1]):
-                for k in range(map_info[2]):
-                    os.remove(os.path.join(i[0], i[1] + \
-                                           "{:03}{:03}.sec".format(j, k)))
-            for j in range(map_info[3]):
-                os.remove(os.path.join(i[0], i[1] + "{:03}.png".format(j)))
-            os.remove(os.path.join(i[0], i[1] + ".mp"))
-
-        update_progress("MAPS_CONVERTED_" + time.strftime("%H:%M:%S"))
-        if args.verbose:
-            print_log("{} files converted ({} maps)".format(count, len(maps)))
 
     # Конвертация текстов игры
     # Примечание: в оригинальной игре есть кривой файл -
