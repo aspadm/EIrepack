@@ -6,6 +6,7 @@ import fig
 import bon
 import anm
 from textures_link import textures
+from math import sqrt, atan2
 
 """
 .lnk
@@ -252,11 +253,30 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
 
         nodes_prepare.update({part_name: [geomnode, pos]})
 
+    # prepare root transformation
+    root_pos = dae.scene.TranslateTransform(root_pos[0],
+                                            root_pos[1],
+                                            root_pos[2])
+    vec_len = sqrt(root_rot[1] ** 2 + root_rot[2] ** 2 + root_rot[3] ** 2)
+    # quaternion (w, x, y, z) to vector-based rotation (angle, x, y, z)
+    if vec_len < 0.00001:
+        root_rot = [0, 0, 0, 0]
+    else:
+        root_rot[1] /= vec_len
+        root_rot[2] /= vec_len
+        root_rot[3] /= vec_len
+        if root_rot[0] < 0:
+            root_rot[0] = 114.59155903 * atan2(- vec_len, - root_rot[0])
+        else:
+            root_rot[0] = 114.59155903 * atan2(vec_len, root_rot[0])
+    root_rot = dae.scene.RotateTransform(root_rot[1], root_rot[2],
+                                         root_rot[3], root_rot[0])
+
     # generate scene hierarchy
     root_node = dae.scene.Node(model_name + add_suf,
                                children=[build_scene_hierarchy(model_tree,
                                                                nodes_prepare)],
-                               transforms=[]) # TODO TRANSFORMATION
+                               transforms=[root_pos, root_rot])
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
     mesh.lights.append(sun)
