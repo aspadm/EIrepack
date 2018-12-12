@@ -4,6 +4,7 @@ import sys
 import join_tiles
 import numpy as np
 import collada as dae
+from intersect import get_z
 
 """
 scene -> nodes (position) -> geometry nodes -> geometry data 
@@ -144,7 +145,11 @@ def prepare_nodes(mesh, mat, i, j, name, v_arr, t_arr, altitude, tiles_count, wa
     return dae.scene.Node(name + "_" + subname + "_{:03}_{:03}".format(i, j),
                                 children=geomnodes, transforms=[pos])
 
-def convert_map(name):
+def convert_map(name, unit_points=None):
+    if unit_points is not None:
+        # unit Z coord by map
+        unit_z = [-1.0 for i in range(len(unit_points))]
+        
     map_name = name.split("\\")[-1].split("/")[-1]
     
     # common info about map
@@ -208,26 +213,40 @@ def convert_map(name):
             # read map sector
             info = sec.read_info(name + "{:03}{:03}.sec".format(i, j))
 
+            # get unit points Z
+            if unit_points is not None and min(unit_z) < 0:
+                # now using VERY STUPID realization (replace and fix later)
+                vert_tmp, n_tmp, t_tmp, ind_tmp = create_geometry(info[1][:],
+                                                                  info[2][:],
+                                                                  map_info[0],
+                                                                  map_info[5])
+                for unit_i in range(len(unit_points)):
+                    if unit_z[unit_i] < 0:
+                        for p_ind in range(0, 18432, 9):
+                            unit_z[unit_i] = get_z(unit_points[unit_i][0] - i * 32,
+                                                   unit_points[unit_i][1] - j * 32,
+                                                   [vert_tmp[ind_tmp[p_ind] * 3],
+                                                    vert_tmp[ind_tmp[p_ind] * 3 + 1],
+                                                    vert_tmp[ind_tmp[p_ind] * 3 + 2]],
+                                                   [vert_tmp[ind_tmp[p_ind + 3] * 3],
+                                                    vert_tmp[ind_tmp[p_ind + 3] * 3 + 1],
+                                                    vert_tmp[ind_tmp[p_ind + 3] * 3 + 2]],
+                                                   [vert_tmp[ind_tmp[p_ind + 6] * 3],
+                                                    vert_tmp[ind_tmp[p_ind + 6] * 3 + 1],
+                                                    vert_tmp[ind_tmp[p_ind + 6] * 3 + 2]])
+                            if unit_z[unit_i] >= 0.0:
+                                unit_points[unit_i][2] += unit_z[unit_i]
+                                break
             
             nodes.append(prepare_nodes(mesh, mat, i, j, name, info[1][:],
                                        info[3 if info[0] else 2][:],
                                        map_info[0], map_info[5]))
-##info[1][:],
-##                                           info[3 if info[0] else 2][:],
-##                                           map_info[0],
-##                                           map_info[5]
-            
-##            nodes.append(prepare_nodes(i, j, name, v_arr, t_arr, altitude,
-##                                       tiles_count))
+
             if info[0] != 0:
                 liquid_nodes.append(prepare_nodes(mesh, mat, i, j, name, info[2][:],
                                     info[4][:],
                                     map_info[0], map_info[5], info[5]))
-##            if info[0] != 0:
-##                geomnodes.append(create_geometry("liquid_{:03}_{:03}".format(i, j),
-##                                                 info[2],
-##                                                 info[4], info[5],
-##                                                 map_info[0]))
+
 
     # add base light
     sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
@@ -247,6 +266,8 @@ def convert_map(name):
 
     # finalyze and save mesh
     mesh.write(name + ".dae")
+
+    return unit_points
 
 if __name__ == '__main__':
     if 2 == len(sys.argv):
