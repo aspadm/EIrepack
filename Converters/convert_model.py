@@ -124,13 +124,14 @@ def create_geometry(part_data, coefs=[0, 0, 0]):
     norm_buf = []
     tex_buf = []
     ind_buf = []
-    
+
+    # TODO: add interpolation
     for i in range(part_data[1]):
         for j in range(4):
             vert_buf.extend([part_data[13][i][0][0][j],
                              part_data[13][i][1][0][j],
                              part_data[13][i][2][0][j]])
-
+    # TODO: add interpolation
     for i in range(part_data[2]):
         for j in range(4):
             norm_buf.extend([part_data[14][i][0][j],
@@ -216,7 +217,7 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
             return 1
 
         # prepare geometry
-        vert, norm, tex, ind = create_geometry(part_data)
+        vert, norm, tex, ind = create_geometry(part_data, coefs)
         vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
                                              ("X", "Y", "Z"))
         norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
@@ -243,6 +244,7 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
         mesh.geometries.append(geom)
 
         # mesh position
+        # TODO: add interpolation
         pos = dae.scene.TranslateTransform(part_pos[0][0],
                                            part_pos[0][1],
                                            part_pos[0][2])
@@ -278,16 +280,20 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
                                                                nodes_prepare)],
                                transforms=[root_pos, root_rot])
     # add base light
-    sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
-    mesh.lights.append(sun)
-    sun_node = dae.scene.Node("sunshine", children=[dae.scene.LightNode(sun)],
-                              transforms=[dae.scene.MatrixTransform(np.array(
-                                    [1, 0, 0, 0,
-                                     0, 1, 0, 0,
-                                     0, 0, 1, 0,
-                                     0, 0, 0, 1]))])
+    if add_suf == "":
+        sun = dae.light.DirectionalLight("Sun", (1, 1, 1))
+        mesh.lights.append(sun)
+        sun_node = dae.scene.Node("sunshine",
+                                  children=[dae.scene.LightNode(sun)],
+                                  transforms=[dae.scene.MatrixTransform(
+                                              np.array([1, 0, 0, 0,
+                                                        0, 1, 0, 0,
+                                                        0, 0, 1, 0,
+                                                        0, 0, 0, 1]))])
     # create main scene
-    myscene = dae.scene.Scene(model_name + add_suf, [sun_node, root_node])
+        myscene = dae.scene.Scene(model_name + add_suf, [sun_node, root_node])
+    else:
+        myscene = dae.scene.Scene(model_name + add_suf, [root_node])
     mesh.scenes.append(myscene)
     mesh.scene = myscene
 

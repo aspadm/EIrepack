@@ -15,8 +15,8 @@ def merge_dae_objects(list_dae_objects, scene_name):
     if len(list_dae_objects) == 0:
         return merged_dae_object
    
-    merged_dae_object.assetInfo = list_dae_objects[0].assetInfo
-    merged_dae_object.lights.extend(list_dae_objects[0].lights)
+    merged_dae_object.assetInfo = list_dae_objects[-1].assetInfo
+    merged_dae_object.lights.extend(list_dae_objects[-1].lights)
     
     list_nodes_of_scene = []
     for mesh in list_dae_objects:

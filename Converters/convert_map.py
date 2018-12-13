@@ -238,14 +238,15 @@ def convert_map(name, unit_points=None):
                                 unit_points[unit_i][2] += unit_z[unit_i]
                                 break
             
-            nodes.append(prepare_nodes(mesh, mat, i, j, name, info[1][:],
+            nodes.append(prepare_nodes(mesh, mat, i, j, map_name, info[1][:],
                                        info[3 if info[0] else 2][:],
                                        map_info[0], map_info[5]))
 
             if info[0] != 0:
-                liquid_nodes.append(prepare_nodes(mesh, mat, i, j, name, info[2][:],
-                                    info[4][:],
-                                    map_info[0], map_info[5], info[5]))
+                liquid_nodes.append(prepare_nodes(mesh, mat, i, j, map_name,
+                                                  info[2][:],info[4][:],
+                                                  map_info[0], map_info[5],
+                                                  info[5]))
 
 
     # add base light
