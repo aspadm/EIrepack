@@ -47,27 +47,21 @@ v2 = t1 + (t2 - t1) * d
 
 res = v1 + (v2 - v1) * h
 """
-def trilinear(arr, coefs=[0, 0, 0]):
-    buf = [[0.0 for i in range(4)] for j in range(3)]
+def trilinear(val, coefs=[0, 0, 0]):
+    # Linear interpolation by str
+    t1 = val[0] + (val[1] - val[0]) * coefs[1]
+    t2 = val[2] + (val[3] - val[2]) * coefs[1]
+    # Bilinear interpolation by dex
+    v1 = t1 + (t2 - t1) * coefs[0]
 
-    for i in range(3):
-        for j in range(4):
-            # Linear interpolation by str
-            t1 = arr[0][i][j] + (arr[1][i][j] - arr[0][i][j]) * coefs[0]
-            t2 = arr[2][i][j] + (arr[3][i][j] - arr[2][i][j]) * coefs[0]
-            # Bilinear interpolation by dex
-            v1 = t1 + (t2 - t1) * coefs[1]
+    # Linear interpolation by str
+    t1 = val[4] + (val[5] - val[4]) * coefs[1]
+    t2 = val[6] + (val[7] - val[6]) * coefs[1]
+    # Bilinear interpolation by dex
+    v2 = t1 + (t2 - t1) * coefs[0]
 
-            # Linear interpolation by str
-            t1 = arr[4][i][j] + (arr[5][i][j] - arr[4][i][j]) * coefs[0]
-            t1 = arr[6][i][j] + (arr[7][i][j] - arr[6][i][j]) * coefs[0]
-            # Bilinear interpolation by dex
-            v2 = t1 + (t2 - t1) * coefs[1]
-
-            # Trilinear interpolation by height
-            buf[i][j] = v1 + (v2 - v1) * coefs[2]
-
-    return buf
+    # Trilinear interpolation by height
+    return v1 + (v2 - v1) * coefs[2]
 
 def convert_to_obj(name, coefs=[0, 0, 0]):
     model_name = name.split("\\")[-1].split("/")[-1]
@@ -86,9 +80,6 @@ def convert_to_obj(name, coefs=[0, 0, 0]):
 
         if part_data is None:
             return
-
-        vertex_buf = [trilinear([part_data[13][xyz][block][:]]) \
-                      for i in range(part_data[1])]
 
                           # v_data   v xyz blk
         vertex_buf = [[part_data[13][i][0][0][:], \
@@ -125,13 +116,15 @@ def create_geometry(part_data, coefs=[0, 0, 0]):
     tex_buf = []
     ind_buf = []
 
-    # TODO: add interpolation
     for i in range(part_data[1]):
         for j in range(4):
-            vert_buf.extend([part_data[13][i][0][0][j],
-                             part_data[13][i][1][0][j],
-                             part_data[13][i][2][0][j]])
-    # TODO: add interpolation
+            vert_buf.extend([trilinear([part_data[13][i][0][k][j] for k in range(8)],
+                                        coefs),
+                             trilinear([part_data[13][i][1][k][j] for k in range(8)],
+                                        coefs),
+                             trilinear([part_data[13][i][2][k][j] for k in range(8)],
+                                        coefs)])
+            
     for i in range(part_data[2]):
         for j in range(4):
             norm_buf.extend([part_data[14][i][0][j],
@@ -244,10 +237,12 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
         mesh.geometries.append(geom)
 
         # mesh position
-        # TODO: add interpolation
-        pos = dae.scene.TranslateTransform(part_pos[0][0],
-                                           part_pos[0][1],
-                                           part_pos[0][2])
+        pos = dae.scene.TranslateTransform(trilinear([part_pos[i][0] for i in range(8)],
+                                                     coefs),
+                                           trilinear([part_pos[i][1] for i in range(8)],
+                                                     coefs),
+                                           trilinear([part_pos[i][2] for i in range(8)],
+                                                     coefs))
         # reinstance material
         matnode = dae.scene.MaterialNode("material0" + add_suf, mat, inputs=[])
         # add geometry to wrap node
