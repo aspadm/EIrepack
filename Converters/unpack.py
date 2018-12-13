@@ -111,7 +111,7 @@ folder anymore".format(count))
     if not args.skip_convert:
         if args.verbose:
             print_log("\nConvert files\n")
-        static_objs = {} # name, objname, texture, complection, position, rotation
+        static_objs = {} # name, objname, texture, complection, position, rotation, parts
         maps = []
         figs = []
         count = 0
@@ -202,12 +202,17 @@ folder anymore".format(count))
                                         buf_objs[-1][var_lbl][-cnt] = float(buf[0][1:])
                                         cnt -= 1
                                     continue
+                                elif cnt < 0:
+                                    if buf[0][0] == "-":
+                                        buf_objs[-1][6].append(buf[0][1:])
+                                        continue
+                                    else:
+                                        cnt = 0
                                 
                                 if buf[0] == "OBJTEMPLATE":
                                     count += 1
-                                    buf_objs.append([buf[1], buf[1] + "_" + file_n + "_{}".format(count),
-                                              None, [None, None, None],
-                                              [None, None, None], [None, None, None, None]])
+                                    buf_objs[-1][0] = buf[1]
+                                    buf_objs[-1][1] = buf[1] + "_" + file_n + "_{}".format(count)
                                 if buf[0] == "OBJPRIMTXTR" and buf_objs[-1][2] is None:
                                     buf_objs[-1][2] = buf[1]
                                 if buf[0] == "OBJCOMPLECTION":
@@ -219,6 +224,15 @@ folder anymore".format(count))
                                 if buf[0] == "OBJROTATION":
                                     var_lbl = 5
                                     cnt = 4
+                                if buf[0] == "OBJBODYPARTS":
+                                    buf_objs.append([None, None, None, [None, None, None],
+                                                     [None, None, None], [None, None, None,
+                                                     None], None])
+                                    if buf[1] != "None":
+                                        buf_objs[-1][6] = []
+                                        var_lbl = 6
+                                        cnt = -1
+                
                         static_objs.update({file_n.lower(): buf_objs})
                     os.remove(os.path.join(d, file))
 
@@ -255,23 +269,20 @@ folder anymore".format(count))
             unit_pos = convert_map.convert_map(os.path.join(i[0], i[1]), unit_pos)
 
             # Сконвертируем статику
-            # name, objname, texture, complection, position, rotation
+            # name, objname, texture, complection, position, rotation, parts
             list_fpath_inputs = [os.path.join(args.dst_dir, "Res", "figures",
                                               s_obj[0], s_obj[1] + ".dae") \
                                  for s_obj in static_objs[i[1].lower()]]
 
             for k, s_obj in enumerate(static_objs[i[1].lower()]):
-##                shutil.copyfile(os.path.join(args.dst_dir, "Res", "figures",
-##                                              s_obj[0], s_obj[0] + ".lnk"),
-##                                os.path.join(args.dst_dir, "Res", "figures",
-##                                              s_obj[0], s_obj[1] + ".lnk"))
                 convert_model.convert_model(os.path.join(args.dst_dir, "Res", "figures",
                                                          s_obj[0], s_obj[0]),
                                             add_suf=s_obj[1][len(s_obj[0]):],
                                             coefs=s_obj[3],
                                             root_pos=unit_pos[k],
                                             root_rot=s_obj[5],
-                                            tex_name=s_obj[2])
+                                            tex_name=s_obj[2],
+                                            need_parts=s_obj[6])
             
             # Создадим карту со статикой
             list_fpath_inputs.append(os.path.join(i[0], i[1]) + ".dae")

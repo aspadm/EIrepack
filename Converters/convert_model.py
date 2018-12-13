@@ -147,17 +147,18 @@ def create_geometry(part_data, coefs=[0, 0, 0]):
 
     return vert_buf, norm_buf, tex_buf, ind_buf
 
-def build_scene_hierarchy(tree, nodes_prepare):
+def build_scene_hierarchy(tree, nodes_prepare, need_parts):
     buf = []
 
     for name in tree[1]:
-        buf.append(build_scene_hierarchy(name, nodes_prepare))
+        buf.append(build_scene_hierarchy(name, nodes_prepare, need_parts))
 
-    buf.append(nodes_prepare[tree[0]][0])
+    if need_parts is None or tree[0] in need_parts:
+        buf.append(nodes_prepare[tree[0]][0])
 
     return dae.scene.Node(tree[0], children=buf, transforms=[nodes_prepare[tree[0]][1]])
 
-def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, tex_name=None):
+def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, tex_name=None, need_parts=None):
     if coefs is None:
         coefs = [0, 0, 0]
     if root_pos is None:
@@ -272,7 +273,8 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
     # generate scene hierarchy
     root_node = dae.scene.Node(model_name + add_suf,
                                children=[build_scene_hierarchy(model_tree,
-                                                               nodes_prepare)],
+                                                               nodes_prepare,
+                                                               need_parts)],
                                transforms=[root_pos, root_rot])
     # add base light
     if add_suf == "":
