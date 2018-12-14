@@ -245,6 +245,60 @@ folder anymore".format(count))
         # Для этого используются MP, SEC файлы карты и дополнительные текстуры
         count = 0
         for i in maps:
+            if i[1].lower() not in static_objs:
+                if os.path.isfile(os.path.join(args.dst_dir, "Maps",
+                                               i[1] + ".mob.yaml")):
+                    # Просмотрим файл на статику
+                    buf_objs = []
+                    with open(os.path.join(args.dst_dir, "Maps",
+                                           i[1] + ".mob.yaml")) as f:
+                        cnt = 0
+                        for line in f.readlines():
+                            if len(line) > 100:
+                                continue
+                            buf = line.replace("\n", "").replace("\r", "").\
+                                       replace(" ", "").replace("\"", "").split(":")
+
+                            if cnt > 0:
+                                if buf_objs[-1][var_lbl][-cnt] is None:
+                                    buf_objs[-1][var_lbl][-cnt] = float(buf[0][1:])
+                                    cnt -= 1
+                                continue
+                            elif cnt < 0:
+                                if buf[0][0] == "-":
+                                    buf_objs[-1][6].append(buf[0][1:])
+                                    continue
+                                else:
+                                    cnt = 0
+                            
+                            if buf[0] == "OBJTEMPLATE":
+                                count += 1
+                                buf_objs[-1][0] = buf[1]
+                                buf_objs[-1][1] = buf[1] + "_" + i[1] + "_{}".format(count)
+                            if buf[0] == "OBJPRIMTXTR" and buf_objs[-1][2] is None:
+                                buf_objs[-1][2] = buf[1]
+                            if buf[0] == "OBJCOMPLECTION":
+                                var_lbl = 3
+                                cnt = 3
+                            if buf[0] == "OBJPOSITION":
+                                var_lbl = 4
+                                cnt = 3
+                            if buf[0] == "OBJROTATION":
+                                var_lbl = 5
+                                cnt = 4
+                            if buf[0] == "OBJBODYPARTS":
+                                buf_objs.append([None, None, None, [None, None, None],
+                                                 [None, None, None], [None, None, None,
+                                                 None], None])
+                                if buf[1] != "None":
+                                    buf_objs[-1][6] = []
+                                    var_lbl = 6
+                                    cnt = -1
+            
+                    static_objs.update({i[1].lower(): buf_objs})
+                else:
+                    static_objs.update({i[1].lower(): None})
+            
             # Параметры карты
             map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
             if args.verbose:
@@ -260,47 +314,57 @@ folder anymore".format(count))
                                              i[1] + "{:03}.png".format(j)),
                                 os.path.join(i[0], i[1] + "{:03}.png".format(j)))
 
-            # Позиции юнитов на карте, с относительной Z
-            unit_pos = [s_obj[4] for s_obj in static_objs[i[1].lower()]]
-            if len(unit_pos) == 0:
+            if static_objs[i[1].lower()] is not None:
+                # Позиции юнитов на карте, с относительной Z
+                unit_pos = [s_obj[4] for s_obj in static_objs[i[1].lower()]]
+                if len(unit_pos) == 0:
+                    unit_pos = None
+            else:
                 unit_pos = None
                 
             # Конвертация карты и текстур, получение Z координаты юнитов
             unit_pos = convert_map.convert_map(os.path.join(i[0], i[1]), unit_pos)
 
-            # Сконвертируем статику
-            # name, objname, texture, complection, position, rotation, parts
-            list_fpath_inputs = [os.path.join(args.dst_dir, "Res", "figures",
-                                              s_obj[0], s_obj[1] + ".dae") \
-                                 for s_obj in static_objs[i[1].lower()]]
+            if static_objs[i[1].lower()] is not None:
+                # Сконвертируем статику
+                # name, objname, texture, complection, position, rotation, parts
+                list_fpath_inputs = [os.path.join(args.dst_dir, "Res", "figures",
+                                                  s_obj[0], s_obj[1] + ".dae") \
+                                     for s_obj in static_objs[i[1].lower()]]
 
-            for k, s_obj in enumerate(static_objs[i[1].lower()]):
-                convert_model.convert_model(os.path.join(args.dst_dir, "Res", "figures",
-                                                         s_obj[0], s_obj[0]),
-                                            add_suf=s_obj[1][len(s_obj[0]):],
-                                            coefs=s_obj[3],
-                                            root_pos=unit_pos[k],
-                                            root_rot=s_obj[5],
-                                            tex_name=s_obj[2],
-                                            need_parts=s_obj[6])
-            
-            # Создадим карту со статикой
-            list_fpath_inputs.append(os.path.join(i[0], i[1]) + ".dae")
-            merge_collada.merge_dae_files(list_fpath_inputs,
-                                          os.path.join(i[0], i[1] + "_full.dae"),
-                                          i[1] + "_full")
-            
-            # Скопируем текстуры статики
-            for s_obj in static_objs[i[1].lower()]:
-                if not os.path.isfile(os.path.join(i[0], s_obj[2] + ".png")):
-                    shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
-                                                 s_obj[2] + ".png"),
-                                    os.path.join(i[0], s_obj[2] + ".png"))
+                for k, s_obj in enumerate(static_objs[i[1].lower()]):
+                    convert_model.convert_model(os.path.join(args.dst_dir, "Res", "figures",
+                                                             s_obj[0], s_obj[0]),
+                                                add_suf=s_obj[1][len(s_obj[0]):],
+                                                coefs=s_obj[3],
+                                                root_pos=unit_pos[k],
+                                                root_rot=s_obj[5],
+                                                tex_name=s_obj[2],
+                                                need_parts=s_obj[6])
 
-            # Удалим использованную статику
-            for st_dae in list_fpath_inputs[:-1]:
-                os.remove(st_dae)
-                #os.remove(st_dae[:-3] + "lnk")
+                ind = 0
+                while ind < len(list_fpath_inputs):
+                    if os.path.isfile(list_fpath_inputs[ind]):
+                        ind += 1
+                    else:
+                        print_log("File {} not exist".format(list_fpath_inputs.pop(ind)))
+                
+                # Создадим карту со статикой
+                list_fpath_inputs.append(os.path.join(i[0], i[1]) + ".dae")
+                merge_collada.merge_dae_files(list_fpath_inputs,
+                                              os.path.join(i[0], i[1] + "_full.dae"),
+                                              i[1] + "_full")
+                
+                # Скопируем текстуры статики
+                for s_obj in static_objs[i[1].lower()]:
+                    if not os.path.isfile(os.path.join(i[0], s_obj[2] + ".png")):
+                        shutil.copyfile(os.path.join(args.dst_dir, "Res", "textures",
+                                                     s_obj[2] + ".png"),
+                                        os.path.join(i[0], s_obj[2] + ".png"))
+
+                # Удалим использованную статику
+                for st_dae in list_fpath_inputs[:-1]:
+                    os.remove(st_dae)
 
             # Удаляем исходные файлы
             for j in range(map_info[1]):

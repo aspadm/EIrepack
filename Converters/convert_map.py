@@ -222,21 +222,23 @@ def convert_map(name, unit_points=None):
                                                                   map_info[5])
                 for unit_i in range(len(unit_points)):
                     if unit_z[unit_i] < 0:
-                        for p_ind in range(0, 18432, 9):
-                            unit_z[unit_i] = get_z(unit_points[unit_i][0] - i * 32,
-                                                   unit_points[unit_i][1] - j * 32,
-                                                   [vert_tmp[ind_tmp[p_ind] * 3],
-                                                    vert_tmp[ind_tmp[p_ind] * 3 + 1],
-                                                    vert_tmp[ind_tmp[p_ind] * 3 + 2]],
-                                                   [vert_tmp[ind_tmp[p_ind + 3] * 3],
-                                                    vert_tmp[ind_tmp[p_ind + 3] * 3 + 1],
-                                                    vert_tmp[ind_tmp[p_ind + 3] * 3 + 2]],
-                                                   [vert_tmp[ind_tmp[p_ind + 6] * 3],
-                                                    vert_tmp[ind_tmp[p_ind + 6] * 3 + 1],
-                                                    vert_tmp[ind_tmp[p_ind + 6] * 3 + 2]])
-                            if unit_z[unit_i] >= 0.0:
-                                unit_points[unit_i][2] += unit_z[unit_i]
-                                break
+                        if -2 <= unit_points[unit_i][0] - i * 32 <= 34 and \
+                           -2 <= unit_points[unit_i][1] - j * 32 <= 34:
+                            for p_ind in range(0, 18432, 9):
+                                unit_z[unit_i] = get_z(unit_points[unit_i][0] - i * 32,
+                                                       unit_points[unit_i][1] - j * 32,
+                                                       [vert_tmp[ind_tmp[p_ind] * 3],
+                                                        vert_tmp[ind_tmp[p_ind] * 3 + 1],
+                                                        vert_tmp[ind_tmp[p_ind] * 3 + 2]],
+                                                       [vert_tmp[ind_tmp[p_ind + 3] * 3],
+                                                        vert_tmp[ind_tmp[p_ind + 3] * 3 + 1],
+                                                        vert_tmp[ind_tmp[p_ind + 3] * 3 + 2]],
+                                                       [vert_tmp[ind_tmp[p_ind + 6] * 3],
+                                                        vert_tmp[ind_tmp[p_ind + 6] * 3 + 1],
+                                                        vert_tmp[ind_tmp[p_ind + 6] * 3 + 2]])
+                                if unit_z[unit_i] >= 0.0:
+                                    unit_points[unit_i][2] += unit_z[unit_i]
+                                    break
             
             nodes.append(prepare_nodes(mesh, mat, i, j, map_name, info[1][:],
                                        info[3 if info[0] else 2][:],
@@ -267,6 +269,10 @@ def convert_map(name, unit_points=None):
 
     # finalyze and save mesh
     mesh.write(name + ".dae")
+
+    for i, j in enumerate(unit_z):
+        if j == -1:
+            print("Unit {} incorrectly placed".format(i))
 
     return unit_points
 
