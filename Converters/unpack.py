@@ -58,6 +58,31 @@ folder anymore".format(count))
     count = 0
     flag = 0 if args.skip_extract else 1
     while flag:
+        if count == 1:
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco1.anm"),
+                os.path.join(args.dst_dir, "Res", "figures", "unmoco1.anm"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco2.anm"),
+                            os.path.join(args.dst_dir, "Res", "figures", "unmoco2.anm"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco1.bon"),
+                            os.path.join(args.dst_dir, "Res", "figures", "unmoco1.bon"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco2.bon"),
+                            os.path.join(args.dst_dir, "Res", "figures", "unmoco2.bon"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco1.mod"),
+                            os.path.join(args.dst_dir, "Res", "figures", "unmoco1.mod"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "unmoco2.mod"),
+                            os.path.join(args.dst_dir, "Res", "figures", "unmoco2.mod"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "mainmenu00labels.mmp"),
+                            os.path.join(args.dst_dir, "Res", "textures", "mainmenu00labels.mmp"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "escmenu00.mmp"),
+                            os.path.join(args.dst_dir, "Res", "textures", "escmenu00.mmp"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "mainmenu00.mmp"),
+                            os.path.join(args.dst_dir, "Res", "textures", "mainmenu00.mmp"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "escmenu00labels.mmp"),
+                            os.path.join(args.dst_dir, "Res", "textures", "escmenu00labels.mmp"))
+            shutil.copyfile(os.path.join(args.dst_dir, "Res", "menus", "numbers.mmp"),
+                            os.path.join(args.dst_dir, "Res", "textures", "numbers.mmp"))
+
+        
         count += 1
         flag = 0
         if args.verbose:
@@ -302,7 +327,7 @@ folder anymore".format(count))
             # Параметры карты
             map_info = mp.read_info(os.path.join(i[0], i[1] + ".mp"))
             if args.verbose:
-                print_log(os.path.join(i[0], i[1]),
+                print_log(os.path.join(i[0], i[1]) + 
                       "  + {} textures and {}x{} sectors".format(map_info[3],
                                                                  map_info[1],
                                                                  map_info[2]))

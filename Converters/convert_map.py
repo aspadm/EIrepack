@@ -270,9 +270,10 @@ def convert_map(name, unit_points=None):
     # finalyze and save mesh
     mesh.write(name + ".dae")
 
-    for i, j in enumerate(unit_z):
-        if j == -1:
-            print("Unit {} incorrectly placed".format(i))
+    if unit_points is not None:
+        for i, j in enumerate(unit_z):
+            if j == -1:
+                print("Unit {} incorrectly placed".format(i))
 
     return unit_points
 
