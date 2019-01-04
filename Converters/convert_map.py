@@ -32,9 +32,8 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
     for j in range(16):
         for i in range(16):
             if water_mask != None:
-##                if water_mask[j*16 + i] == 0:
-##                    continue
                 if water_mask[j*16 + i] == 65535:
+                    continue # comment this line to enable hidden liquids polygons
                     for y in range(2):
                         for x in range(2):
                             ind_buf.extend([33 + j * 66 + y * 33 + i * 2 + x,
@@ -43,21 +42,19 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                                             j * 66 + y * 33 + i * 2 + x,
                                             j * 66 + y * 33 + i * 2 + x,
                                             0,
-                                            1  + j * 66 + y * 33 + i * 2 + x,
-                                            1  + j * 66 + y * 33 + i * 2 + x,
+                                            34 + j * 66 + y * 33 + i * 2 + x,
+                                            34 + j * 66 + y * 33 + i * 2 + x,
                                             0])
-                            ind_buf.extend([1  + j * 66 + y * 33 + i * 2 + x,
-                                            1  + j * 66 + y * 33 + i * 2 + x,
-                                            0,
-                                            34 + j * 66 + y * 33 + i * 2 + x,
+                            ind_buf.extend([34 + j * 66 + y * 33 + i * 2 + x,
                                             34 + j * 66 + y * 33 + i * 2 + x,
                                             0,
-                                            33 + j * 66 + y * 33 + i * 2 + x,
-                                            33 + j * 66 + y * 33 + i * 2 + x,
+                                            j * 66 + y * 33 + i * 2 + x,
+                                            j * 66 + y * 33 + i * 2 + x,
+                                            0,
+                                            1 + j * 66 + y * 33 + i * 2 + x,
+                                            1 + j * 66 + y * 33 + i * 2 + x,
                                             0])
                     continue
-                #else:
-                #    print(water_mask[j*16 + i])
             tex_p = t_arr[j * 16 + i]
             index = tex_p[1] * 64 + tex_p[0]
             tex_c = [    index % 32 * 2 + index // 32 * 130,
@@ -89,18 +86,18 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                                     j * 66 + y * 33 + i * 2 + x,
                                     j * 66 + y * 33 + i * 2 + x,
                                     tex_c[y * 3 + x],
-                                    1  + j * 66 + y * 33 + i * 2 + x,
-                                    1  + j * 66 + y * 33 + i * 2 + x,
-                                    tex_c[y * 3 + (x + 1)]])
-                    ind_buf.extend([1  + j * 66 + y * 33 + i * 2 + x,
-                                    1  + j * 66 + y * 33 + i * 2 + x,
-                                    tex_c[y * 3 + (x + 1)],
                                     34 + j * 66 + y * 33 + i * 2 + x,
+                                    34 + j * 66 + y * 33 + i * 2 + x,
+                                    tex_c[(y + 1) * 3 + (x + 1)]])
+                    ind_buf.extend([34 + j * 66 + y * 33 + i * 2 + x,
                                     34 + j * 66 + y * 33 + i * 2 + x,
                                     tex_c[(y + 1) * 3 + (x + 1)],
-                                    33 + j * 66 + y * 33 + i * 2 + x,
-                                    33 + j * 66 + y * 33 + i * 2 + x,
-                                    tex_c[(y + 1) * 3 + x]])
+                                    j * 66 + y * 33 + i * 2 + x,
+                                    j * 66 + y * 33 + i * 2 + x,
+                                    tex_c[y * 3 + x],
+                                    1 + j * 66 + y * 33 + i * 2 + x,
+                                    1 + j * 66 + y * 33 + i * 2 + x,
+                                    tex_c[y * 3 + (x + 1)]])
             
     return vert_buf, norm_buf, tex_buf, ind_buf
 
