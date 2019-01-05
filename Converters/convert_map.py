@@ -23,8 +23,13 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
     tex_buf = []
 
     # Текстурные координаты
-    max_t_ind = max([v[1] * 64 + v[0] for v in t_arr])
-    for i in range(max_t_ind + 1):
+    t_ind_used = []
+    for v in t_arr:
+        tmp = v[1] * 64 + v[0]
+        if tmp < 512 and tmp not in t_ind_used:
+            t_ind_used.append(tmp)
+            
+    for i in t_ind_used:
         tex_buf.extend([[i % 32 / 32 + 0.00390625, 1 - (i // 32 / 16 + 0.0078125)],
                         [i % 32 / 32 + 0.015625, 1 - (i // 32 / 16 + 0.0078125)],
                         [i % 32 / 32 + 0.02734375, 1 - (i // 32 / 16 + 0.0078125)],
@@ -36,6 +41,8 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                         [i % 32 / 32 + 0.00390625, 1 - (i // 32 / 16 + 0.0546875)],
                         [i % 32 / 32 + 0.015625, 1 - (i // 32 / 16 + 0.0546875)],
                         [i % 32 / 32 + 0.02734375, 1 - (i // 32 / 16 + 0.0546875)]])
+
+    t_ind_used = {val: i for i, val in enumerate(t_ind_used)}
 
     ind_buf = []
 
@@ -66,7 +73,7 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                                             0])
                     continue
             tex_p = t_arr[j * 16 + i]
-            index = tex_p[1] * 64 + tex_p[0]
+            index = t_ind_used[tex_p[1] * 64 + tex_p[0]]
             tex_c = [index * 9 + i for i in range(9)]
             if tex_p[2] == 3:
                 tex_c = [tex_c[6], tex_c[3], tex_c[0],
