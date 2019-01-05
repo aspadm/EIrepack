@@ -23,9 +23,19 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
     tex_buf = []
 
     # Текстурные координаты
-    for i in range(32, -1, -1):
-        for j in range(65):
-            tex_buf.extend([j / 64, i / 32])
+    max_t_ind = max([v[1] * 64 + v[0] for v in t_arr])
+    for i in range(max_t_ind + 1):
+        tex_buf.extend([[i % 32 / 32 + 0.00390625, 1 - (i // 32 / 16 + 0.0078125)],
+                        [i % 32 / 32 + 0.015625, 1 - (i // 32 / 16 + 0.0078125)],
+                        [i % 32 / 32 + 0.02734375, 1 - (i // 32 / 16 + 0.0078125)],
+
+                        [i % 32 / 32 + 0.00390625, 1 - (i // 32 / 16 + 0.03125)],
+                        [i % 32 / 32 + 0.015625, 1 - (i // 32 / 16 + 0.03125)],
+                        [i % 32 / 32 + 0.02734375, 1 - (i // 32 / 16 + 0.03125)],
+
+                        [i % 32 / 32 + 0.00390625, 1 - (i // 32 / 16 + 0.0546875)],
+                        [i % 32 / 32 + 0.015625, 1 - (i // 32 / 16 + 0.0546875)],
+                        [i % 32 / 32 + 0.02734375, 1 - (i // 32 / 16 + 0.0546875)]])
 
     ind_buf = []
 
@@ -57,15 +67,7 @@ def create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask=None):
                     continue
             tex_p = t_arr[j * 16 + i]
             index = tex_p[1] * 64 + tex_p[0]
-            tex_c = [    index % 32 * 2 + index // 32 * 130,
-                     1 + index % 32 * 2 + index // 32 * 130,
-                     2 + index % 32 * 2 + index // 32 * 130,
-                         index % 32 * 2 + index // 32 * 130 + 65,
-                     1 + index % 32 * 2 + index // 32 * 130 + 65,
-                     2 + index % 32 * 2 + index // 32 * 130 + 65,
-                         index % 32 * 2 + index // 32 * 130 + 130,
-                     1 + index % 32 * 2 + index // 32 * 130 + 130,
-                     2 + index % 32 * 2 + index // 32 * 130 + 130]
+            tex_c = [index * 9 + i for i in range(9)]
             if tex_p[2] == 3:
                 tex_c = [tex_c[6], tex_c[3], tex_c[0],
                          tex_c[7], tex_c[4], tex_c[1],
@@ -106,7 +108,7 @@ def prepare_nodes(mesh, mat, i, j, name, v_arr, t_arr, altitude, tiles_count, wa
 
     # convert sector data
     vert, norm, tex, ind = create_geometry(v_arr, t_arr, altitude, tiles_count, water_mask)
-    #print(i, j, len(ind))
+
     # prepare geometry data
     vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
                                          ("X", "Y", "Z"))
@@ -180,17 +182,7 @@ def convert_map(name, unit_points=None):
         
         effect = dae.material.Effect("effect{:}".format(i),
                                      [surface, sampler2d], "blinn",
-                                     diffuse=texmap if map_info[9][i][0] != 0\
-                                     else (map_info[9][i][1],
-                                           map_info[9][i][2],
-                                           map_info[9][i][3]),
-                                     transparency=map_info[9][i][4],
-                                     ambient=(map_info[9][i][1],
-                                           map_info[9][i][2],
-                                           map_info[9][i][3]),
-                                     specular=(map_info[9][i][1],
-                                           map_info[9][i][2],
-                                           map_info[9][i][3]))
+                                     diffuse=texmap)
         mat = dae.material.Material("material{:}".format(i),
                                     "mapmaterial{:}".format(i), effect)
 
