@@ -205,37 +205,6 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
     for part_name in parts_list:
         # read model data
         part_pos = bon.read_info(model_folder + part_name + ".bon")
-        part_data = fig.read_info(model_folder + part_name + ".fig")
-
-        if part_data is None:
-            return 1
-
-        # prepare geometry
-        vert, norm, tex, ind = create_geometry(part_data, coefs)
-        vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
-                                             ("X", "Y", "Z"))
-        norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
-                                             ("X", "Y", "Z"))
-        tex_source = dae.source.FloatSource("tex_arr", np.array(tex),
-                                            ("S", "T"))
-        ind_source = np.array(ind)
-
-        # create empty mesh
-        geom = dae.geometry.Geometry(mesh, part_name + "_geom" + add_suf,
-                                     part_name,
-                                     [vert_source, norm_source, tex_source])
-
-        # describe mesh data structure
-        input_list = dae.source.InputList()
-        input_list.addInput(0, "VERTEX", "#vert_arr")
-        input_list.addInput(1, "NORMAL", "#norm_arr")
-        input_list.addInput(2, "TEXCOORD", "#tex_arr")
-
-        # generate geometry data
-        triset = geom.createTriangleSet(ind_source, input_list,
-                                        "material0" + add_suf)
-        geom.primitives.append(triset)
-        mesh.geometries.append(geom)
 
         # mesh position
         pos = dae.scene.TranslateTransform(trilinear([part_pos[i][0] for i in range(8)],
@@ -244,10 +213,46 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
                                                      coefs),
                                            trilinear([part_pos[i][2] for i in range(8)],
                                                      coefs))
-        # reinstance material
-        matnode = dae.scene.MaterialNode("material0" + add_suf, mat, inputs=[])
-        # add geometry to wrap node
-        geomnode = dae.scene.GeometryNode(geom, [matnode])
+
+        if need_parts is None or part_name in need_parts:
+            part_data = fig.read_info(model_folder + part_name + ".fig")
+
+            if part_data is None:
+                return 1
+
+            # prepare geometry
+            vert, norm, tex, ind = create_geometry(part_data, coefs)
+            vert_source = dae.source.FloatSource("vert_arr", np.array(vert),
+                                                 ("X", "Y", "Z"))
+            norm_source = dae.source.FloatSource("norm_arr", np.array(norm),
+                                                 ("X", "Y", "Z"))
+            tex_source = dae.source.FloatSource("tex_arr", np.array(tex),
+                                                ("S", "T"))
+            ind_source = np.array(ind)
+
+            # create empty mesh
+            geom = dae.geometry.Geometry(mesh, part_name + "_geom" + add_suf,
+                                         part_name,
+                                         [vert_source, norm_source, tex_source])
+
+            # describe mesh data structure
+            input_list = dae.source.InputList()
+            input_list.addInput(0, "VERTEX", "#vert_arr")
+            input_list.addInput(1, "NORMAL", "#norm_arr")
+            input_list.addInput(2, "TEXCOORD", "#tex_arr")
+
+            # generate geometry data
+            triset = geom.createTriangleSet(ind_source, input_list,
+                                            "material0" + add_suf)
+            geom.primitives.append(triset)
+            mesh.geometries.append(geom)
+        
+            # reinstance material
+            matnode = dae.scene.MaterialNode("material0" + add_suf, mat, inputs=[])
+            # add geometry to wrap node
+            geomnode = dae.scene.GeometryNode(geom, [matnode])
+        else:
+            geomnode = None
 
         nodes_prepare.update({part_name: [geomnode, pos]})
 
