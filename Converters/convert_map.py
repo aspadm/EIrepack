@@ -208,37 +208,27 @@ def convert_map(name, unit_points=None):
         for j in range(map_info[2]):
             # read map sector
             info = sec.read_info(name + "{:03}{:03}.sec".format(i, j))
-
-            # get unit points Z
-            if unit_points is not None and min(unit_z) < 0:
-                # now using VERY STUPID realization (replace and fix later)
-                vert_tmp, n_tmp, t_tmp, ind_tmp = create_geometry(info[1][:],
-                                                                  info[2][:],
-                                                                  map_info[0],
-                                                                  map_info[5])
-                for unit_i in range(len(unit_points)):
-                    if unit_z[unit_i] < 0:
-                        if -2 <= unit_points[unit_i][0] - i * 32 <= 34 and \
-                           -2 <= unit_points[unit_i][1] - j * 32 <= 34:
-                            for p_ind in range(0, 18432, 9):
-                                unit_z[unit_i] = get_z(unit_points[unit_i][0] - i * 32,
-                                                       unit_points[unit_i][1] - j * 32,
-                                                       [vert_tmp[ind_tmp[p_ind] * 3],
-                                                        vert_tmp[ind_tmp[p_ind] * 3 + 1],
-                                                        vert_tmp[ind_tmp[p_ind] * 3 + 2]],
-                                                       [vert_tmp[ind_tmp[p_ind + 3] * 3],
-                                                        vert_tmp[ind_tmp[p_ind + 3] * 3 + 1],
-                                                        vert_tmp[ind_tmp[p_ind + 3] * 3 + 2]],
-                                                       [vert_tmp[ind_tmp[p_ind + 6] * 3],
-                                                        vert_tmp[ind_tmp[p_ind + 6] * 3 + 1],
-                                                        vert_tmp[ind_tmp[p_ind + 6] * 3 + 2]])
-                                if unit_z[unit_i] >= 0.0:
-                                    unit_points[unit_i][2] += unit_z[unit_i]
-                                    break
             
             nodes.append(prepare_nodes(mesh, mat, i, j, map_name, info[1][:],
                                        info[3 if info[0] else 2][:],
                                        map_info[0], map_info[5]))
+
+            # get unit points Z
+            if unit_points is not None and min(unit_z) < 0:
+                # still bad optimized, but better than early
+                for unit_i in range(len(unit_points)):
+                    if unit_z[unit_i] < 0:
+                        if -2 <= unit_points[unit_i][0] - i * 32 <= 34 and \
+                           -2 <= unit_points[unit_i][1] - j * 32 <= 34:
+                            for p_ind in nodes[-1].children[0].geometry.primitives[0].vertex_index:
+                                unit_z[unit_i] = get_z(unit_points[unit_i][0] - i * 32,
+                                                       unit_points[unit_i][1] - j * 32,
+                                                       nodes[-1].children[0].geometry.primitives[0].vertex[p_ind[0]],
+                                                       nodes[-1].children[0].geometry.primitives[0].vertex[p_ind[1]],
+                                                       nodes[-1].children[0].geometry.primitives[0].vertex[p_ind[2]])
+                                if unit_z[unit_i] >= 0.0:
+                                    unit_points[unit_i][2] += unit_z[unit_i]
+                                    break
 
             if info[0] != 0:
                 liquid_nodes.append(prepare_nodes(mesh, mat, i, j, map_name,
