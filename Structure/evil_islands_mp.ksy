@@ -1,96 +1,81 @@
 meta:
-  id: mp
+  id: evil_islands_mp
   title: Evil Islands, MP file (map header)
   application: Evil Islands
   file-extension: mp
   license: MIT
   endian: le
 doc: Map header
+doc-ref: https://github.com/aspadm/EIrepack/wiki/mp
 seq:
   - id: magic
     contents: [0x72, 0xF6, 0x4A, 0xCE]
-    doc: Magic bytes
   - id: max_altitude
     type: f4
     doc: Maximal height of terrain
-  - id: x_chunks_count
+  - id: num_x_chunks
     type: u4
     doc: Number of sectors by x
-  - id: y_chunks_count
+  - id: num_y_chunks
     type: u4
     doc: Number of sectors by y
-  - id: textures_count
+  - id: num_textures
     type: u4
     doc: Number of texture files
   - id: texture_size
     type: u4
     doc: Size of texture in pixels by side
-  - id: tiles_count
+  - id: num_tiles
     type: u4
-    doc: Number of tiles
   - id: tile_size
     type: u4
     doc: Size of tile in pixels by side
-  - id: materials_count
+  - id: num_materials
     type: u2
-    doc: Number of materials
-  - id: animated_tiles_count
+  - id: num_animated_tiles
     type: u4
-    doc: Number of animated tiles
   - id: materials
     type: material
-    doc: Map materials
     repeat: expr
-    repeat-expr: materials_count
-  - id: id_array
+    repeat-expr: num_materials
+  - id: tiles_id
     type: u4
-    doc: Tile type
     repeat: expr
-    repeat-expr: tiles_count
+    repeat-expr: num_tiles
     enum: tile_type
   - id: animated_tiles
     type: animated_tile
-    doc: Animated tiles
     repeat: expr
-    repeat-expr: animated_tiles_count
+    repeat-expr: num_animated_tiles
 types:
   material:
-    doc: Material parameters
     seq:
       - id: type
         type: u4
-        doc: Material type by
         enum: terrain_type
       - id: color
         type: rgba
         doc: RGBA diffuse color
       - id: self_illumination
         type: f4
-        doc: Self illumination
+        doc: Self illumination strength
       - id: wave_multiplier
         type: f4
-        doc: Wave speed multiplier
       - id: warp_speed
         type: f4
-        doc: Warp speed multiplier
-      - id: unknown
+      - id: reserved
         size: 12
     types:
       rgba:
-        doc: RGBA color
         seq:
           - id: r
             type: f4
-            doc: Red channel
           - id: g
             type: f4
-            doc: Green channel
           - id: b
             type: f4
-            doc: Blue channel
           - id: a
             type: f4
-            doc: Alpha channel
     enums:
       terrain_type:
         0: base
@@ -98,14 +83,11 @@ types:
         2: grass
         3: water
   animated_tile:
-    doc: Animated tile parameters
     seq:
-      - id: start_index
+      - id: start_tile
         type: u2
-        doc: First tile of animation
-      - id: length
+      - id: num_tiles
         type: u2
-        doc: Animation frames count
 enums:
   tile_type:
     0: grass

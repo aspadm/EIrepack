@@ -1,47 +1,39 @@
 meta:
-  id: adb
+  id: evil_islands_adb
   title: Evil Islands, ADB file (animations database)
   application: Evil Islands
   file-extension: adb
   license: MIT
+  encoding: cp1251
   endian: le
 doc: Animations database
+doc-ref: https://github.com/aspadm/EIrepack/wiki/adb
 seq:
   - id: magic
     contents: [0x41, 0x44, 0x42, 0x00]
-    doc: Magic bytes
-  - id: animations_count
+  - id: num_animations
     type: u4
-    doc: Number of animations in base
   - id: unit_name
     type: str
-    encoding: cp1251
     size: 24
-    doc: Name of unit
   - id: min_height
     type: f4
-    doc: Minimal height of unit
   - id: mid_height
     type: f4
-    doc: Middle height of unit
   - id: max_height
     type: f4
-    doc: Maximal height of unit
   - id: animations
     type: animation
-    doc: Array of animations
     repeat: expr
-    repeat-expr: animations_count
+    repeat-expr: num_animations
 types:
   animation:
     doc: Animation's parameters
     seq:
       - id: name
         type: str
-        encoding: cp1251
         size: 16
-        doc: Animation's name
-      - id: number
+      - id: index
         type: u4
         doc: Index in animations array
       - id: additionals
@@ -50,12 +42,12 @@ types:
       - id: action_probability
         type: u4
         doc: Percents of action probability
-      - id: animation_length
+      - id: animation_duration
         type: u4
-        doc: Lenght of animation in game ticks
+        doc: Length of animation in game ticks
       - id: movement_speed
         type: f4
-        doc: Movement speed
+        doc: Movement speed ratio
       - id: start_show_hide1
         type: u4
       - id: start_show_hide2
@@ -92,7 +84,7 @@ types:
             value: '(packed >> 15) & 7'
           action_type:
             value: '(packed >> 18) & 15'
-          action_modifyer:
+          action_modifier:
             value: '(packed >> 22) & 255'
           animation_stage:
             value: '(packed >> 30) & 3'

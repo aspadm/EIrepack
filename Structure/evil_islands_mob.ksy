@@ -1,11 +1,12 @@
 meta:
-  id: mob
+  id: evil_islands_mob
   title: Evil Islands, MOB file (map entities)
   application: Evil Islands
   file-extension: mob
   license: MIT
   endian: le
 doc: Map entities tree
+doc-ref: https://github.com/aspadm/EIrepack/wiki/mob
 seq:
   - id: root_node
     type: node
@@ -16,14 +17,14 @@ types:
     seq:
       - id: type_id
         type: u4
-        doc: Node children type ID
+        doc: Children type ID
       - id: size
         type: u4
         doc: Node full size
       - id: data
         type: node_data
         size: size - 8
-        doc: Node stored data
+        doc: Stored data
   node_data:
     doc: Node data
     seq:
@@ -60,5 +61,4 @@ types:
             0xBBBF0000: node
             0xDDDDDDD1: node
             _: u1
-        doc: Node elements
         repeat: eos

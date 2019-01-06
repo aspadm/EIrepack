@@ -1,42 +1,33 @@
 meta:
-  id: fig
+  id: evil_islands_fig
   title: Evil Islands, FIG file (figure)
   application: Evil Islands
   file-extension: fig
   license: MIT
   endian: le
 doc: 3d mesh
+doc-ref: https://github.com/aspadm/EIrepack/wiki/fig
 seq:
   - id: magic
     contents: [0x46, 0x49, 0x47, 0x38]
-    doc: Magic bytes
-  - id: vertex_count
+  - id: num_vertex_blocks
     type: u4
-    doc: Number of vertices blocks
-  - id: normal_count
+  - id: num_normal_blocks
     type: u4
-    doc: Number of normals blocks
-  - id: texcoord_count
+  - id: num_texcoords
     type: u4
-    doc: Number of UV pairs
-  - id: index_count
+  - id: num_indexes
     type: u4
-    doc: Number of indeces
-  - id: vertex_components_count
+  - id: num_vertex_components
     type: u4
-    doc: Number of vertex components
-  - id: morph_components_count
+  - id: num_morph_components
     type: u4
-    doc: Number of morphing components
-  - id: unknown
+  - id: unused
     contents: [0, 0, 0, 0]
-    doc: Unknown (aligment)
-  - id: group
+  - id: render_group
     type: u4
-    doc: Render group
   - id: texture_index
     type: u4
-    doc: Texture offset
   - id: center
     type: vec3
     doc: Center of mesh
@@ -52,63 +43,57 @@ seq:
     doc: AABB point of mesh
     repeat: expr
     repeat-expr: 8
-  - id: radius
+  - id: bounding_radius
     type: f4
-    doc: Radius of boundings
     repeat: expr
     repeat-expr: 8
-  - id: vertex_array
+  - id: vertex_blocks
     type: vertex_block
     doc: Blocks of raw vertex data
     repeat: expr
     repeat-expr: 8
-  - id: normal_array
+  - id: normal_blocks
     type: vec4x4
     doc: Packed normal data
     repeat: expr
-    repeat-expr: normal_count
+    repeat-expr: num_normal_blocks
   - id: texcoord_array
     type: vec2
-    doc: Texture coordinates data
     repeat: expr
-    repeat-expr: texcoord_count
-  - id: index_array
-    type: u2
-    doc: Triangles indeces
+    repeat-expr: num_texcoords
+  - id: triangles
+    type: triangle
     repeat: expr
-    repeat-expr: index_count
+    repeat-expr: num_indexes / 3
   - id: vertex_components_array
     type: vertex_component
-    doc: Vertex components array
     repeat: expr
-    repeat-expr: vertex_components_count
+    repeat-expr: num_vertex_components
   - id: morph_components_array
     type: morph_component
-    doc: Morphing components array
     repeat: expr
-    repeat-expr: morph_components_count
+    repeat-expr: num_morph_components
 types:
+  triangle:
+    seq:
+      - id: index
+        type: u2
+        repeat: expr
+        repeat-expr: 3
   morph_component:
-    doc: Morphing components indeces
     seq:
       - id: morph_index
         type: u2
-        doc: Index of morphing data
       - id: vertex_index
         type: u2
-        doc: Index of vertex
   vertex_component:
-    doc: Vertex components indeces
     seq:
       - id: position_index
         type: u2
-        doc: Index of position data
       - id: normal_index
         type: u2
-        doc: Index of normal data
       - id: texture_index
         type: u2
-        doc: Index of texcoord data
   vec2:
     doc: 2d vector
     seq:
@@ -135,17 +120,14 @@ types:
     seq:
       - id: x
         type: f4
-        doc: x axis
         repeat: expr
         repeat-expr: 4
       - id: y
         type: f4
-        doc: y axis
         repeat: expr
         repeat-expr: 4
       - id: z
         type: f4
-        doc: z axis
         repeat: expr
         repeat-expr: 4
   vertex_block:
@@ -153,29 +135,24 @@ types:
     seq:
       - id: block
         type: vec3x4
-        doc: Vertex data
         repeat: expr
-        repeat-expr: _root.vertex_count
+        repeat-expr: _root.num_vertex_blocks
   vec4x4:
     doc: 4d vector with 4 values per axis
     seq:
       - id: x
         type: f4
-        doc: x axis
         repeat: expr
         repeat-expr: 4
       - id: y
         type: f4
-        doc: y axis
         repeat: expr
         repeat-expr: 4
       - id: z
         type: f4
-        doc: z axis
         repeat: expr
         repeat-expr: 4
       - id: w
         type: f4
-        doc: w axis
         repeat: expr
         repeat-expr: 4

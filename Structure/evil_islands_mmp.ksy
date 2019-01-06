@@ -1,58 +1,46 @@
 meta:
-  id: mmp
+  id: evil_islands_mmp
   title: Evil Islands, MMP file (texture)
   application: Evil Islands
   file-extension: mmp
   license: MIT
   endian: le
 doc: MIP-mapping texture
+doc-ref: https://github.com/aspadm/EIrepack/wiki/mmp
 seq:
   - id: magic
     contents: [0x4D, 0x4D, 0x50, 0x00]
-    doc: Magic bytes
   - id: width
     type: u4
-    doc: Texture width
   - id: height
     type: u4
-    doc: Texture height
-  - id: mip_levels_count
+  - id: num_mip_levels
     type: u4
-    doc: Number of MIP-mapping stored levels
   - id: fourcc
     type: u4
     enum: pixel_formats
-    doc: FourCC label of pixel format
   - id: bits_per_pixel
     type: u4
-    doc: Number of bits per pixel
   - id: alpha_format
     type: channel_format
-    doc: Description of alpha bits
   - id: red_format
     type: channel_format
-    doc: Description of red bits
   - id: green_format
     type: channel_format
-    doc: Description of green bits
   - id: blue_format
     type: channel_format
-    doc: Description of blue bits
-  - id: unused
-    size: 4
-    doc: Empty space
-  - id: base_texture
+  - id: ofs_base_texture
+    type: u4
+instances:
+  base_texture:
     type:
       switch-on: fourcc
       cases:
-        'pixel_formats::argb4': block_custom
         'pixel_formats::dxt1': block_dxt1
         'pixel_formats::dxt3': block_dxt3
         'pixel_formats::pnt3': block_pnt3
-        'pixel_formats::r5g6b5': block_custom
-        'pixel_formats::a1r5g5b5': block_custom
-        'pixel_formats::argb8': block_custom
         _: block_custom
+    pos: ofs_base_texture + 76
 types:
   block_pnt3:
     seq:
