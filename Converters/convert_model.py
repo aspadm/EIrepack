@@ -206,6 +206,9 @@ def convert_model(name, add_suf="", coefs=None, root_pos=None, root_rot=None, te
         # read model data
         part_pos = bon.read_info(model_folder + part_name + ".bon")
 
+        if part_pos is None or len(part_pos) != 8:
+            return 1
+        
         # mesh position
         pos = dae.scene.TranslateTransform(trilinear([part_pos[i][0] for i in range(8)],
                                                      coefs),
