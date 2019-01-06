@@ -86,7 +86,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "EIrepack v1.0"))
+        Form.setWindowTitle(_translate("Form", "EIrepack v1.1"))
         self.label.setText(_translate("Form", "Папка с игрой (содержит game.exe):"))
         self.src_folder_choser.setText(_translate("Form", "Обзор..."))
         self.in_place.setText(_translate("Form", "Распаковка \"На месте\" (использовать с осторожностью!)"))

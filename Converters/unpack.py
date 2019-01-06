@@ -15,7 +15,7 @@ from GUI import Ui_Form
 import time
 
 funcs = []
-not_copy = ["asi", "dll", "exe", "sav"]
+not_copy = ["asi", "dll", "exe", "sav", "mp", "bmp"]
 simple_copy = ["mp3", "rtf", "dat", "grp", "bik", "ini", "txt", "wav",
                "mat", "scr"]
 archives = ["mq", "mpr", "res", "bon", "mod", "anm"]
@@ -513,7 +513,7 @@ class Thread(QThread):
             self.progress_call.emit(self.progress)
 
 def start_unpack():
-    max_progress = 50033
+    max_progress = 53983
     w.start.setEnabled(False)
     argarr = [w.src_folder.text()]
     
@@ -521,23 +521,24 @@ def start_unpack():
         argarr.append(w.dst_folder.text())
         if not w.need_copy.isChecked():
             argarr.append("--skip_copy")
-            max_progress -= 287
+            max_progress -= 276
     else:
         argarr.append(w.src_folder.text())
         argarr.append("--skip_copy")
-        max_progress -= 287
+        max_progress -= 276
     
     if not w.need_extracting.isChecked():
         argarr.append("--skip_extract")
-        max_progress -= 2009
+        max_progress -= 2036
     if not w.need_converting.isChecked():
         argarr.append("--skip_convert")
-        max_progress -= 47737
+        max_progress -= 51671
     if w.need_verbose.isChecked():
         argarr.append("--verbose")
     if w.need_text_merging.isChecked():
         argarr.append("--text_joint")
-        max_progress += 3561
+    else:
+        max_progress -= 3561
 
     w.progress.setMaximum(max_progress)
     unpack_thread.args = parser.parse_args(argarr)
@@ -568,7 +569,7 @@ def complete():
                                 "Все операции выполнены!")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="EIrepack v1.0 \
+    parser = argparse.ArgumentParser(description="EIrepack v1.1 \
 (Evil Islands resources unpacker and converter)",
                                      add_help=True)
     parser.add_argument("src_dir", type=str,
