@@ -100,33 +100,32 @@ def read_image(f_name):
 def decompress_PNT3(file, size, width, height):
     source = file.read(size)
     src = 0
-    
-    n = 0
-    destination = b""
-    
-    while src < size:
-        v = int.from_bytes(source[src:src + 4], byteorder='little')
-        src += 4
-        
-        if v > 1000000 or v == 0:
-            n += 1
-        else:
-            destination += source[src - (1 + n) * 4:src - 4]
-            destination += b"\x00" * v
-            n = 0
 
-    destination += source[src - n * 4:src]
+    destination = bytearray()
+
+    while src + 4 <= size:
+        v = int.from_bytes(source[src:src + 4], byteorder='little')
+        alpha_byte = source[src + 3]
+
+        if alpha_byte != 0:
+            destination.extend(source[src:src + 4])
+        else:
+            destination.extend(b'\x00' * (v if v else 4))
+        src += 4
+
     data = np.zeros((height, width, 4), dtype=np.uint8)
 
     n = 0
     for i in range(height):
         for j in range(width):
-            data[i, j] = [int.from_bytes(destination[n + 2:n + 3], byteorder='little'),
-                          int.from_bytes(destination[n + 1:n + 2], byteorder='little'),
-                          int.from_bytes(destination[n + 0:n + 1], byteorder='little'),
-                          int.from_bytes(destination[n + 3:n + 4], byteorder='little')]
+            data[i, j] = [
+                destination[n + 2],
+                destination[n + 1],
+                destination[n + 0],
+                destination[n + 3]
+            ]
             n += 4
-            
+
     return data
 
 if __name__ == '__main__':
