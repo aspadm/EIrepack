@@ -1,7 +1,9 @@
+
+
 # EIrepack
 
 ### Greetings
-This is automatic tool for extracting Evil Islands game resources.
+This is an automatic tool for extracting Evil Islands game resources.
 
 Please, visit [project wiki](../../wiki/Home) if this is your first visit.
 
